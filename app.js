@@ -404,9 +404,9 @@ document.addEventListener('keydown', (e) => {
   else if (e.ctrlKey && key === 'x') { key = 'Ctrl+x'; e.preventDefault(); }
   else if (e.ctrlKey && key === '[') { key = 'Escape'; e.preventDefault(); }
   else if (key === 'Tab') { e.preventDefault(); key = 'Tab'; }
-  else if (key === 'Backspace' || key === 'Enter' || key === 'Escape') { e.preventDefault(); }
+  else if (key === 'Backspace' || key === 'Enter' || key === 'Escape' || key === 'Delete') { e.preventDefault(); }
   else if (e.ctrlKey) { e.preventDefault(); return; } // ignore other ctrl combos
-  else if (key.length > 1 && key !== 'Backspace' && key !== 'Enter' && key !== 'Escape' && !key.startsWith('Arrow')) {
+  else if (key.length > 1 && key !== 'Backspace' && key !== 'Enter' && key !== 'Escape' && key !== 'Delete' && !key.startsWith('Arrow')) {
     return; // ignore F-keys etc.
   }
 
@@ -494,7 +494,7 @@ function renderCheatFilters() {
   if (!tabs) return;
   const categories = ['All', ...new Set(CHEATSHEET.map(s => s.title))];
   // Use shorter filter approach
-  const filters = ['All', 'Movement', 'Insert', 'Editing', 'Delete', 'Copy', 'Visual', 'Search', 'Files', 'Config'];
+  const filters = ['All', 'Movement', 'Insert', 'Editing', 'Delete', 'Copy', 'Visual', 'Search', 'Files', 'Config', 'Diff'];
   tabs.innerHTML = filters.map(f =>
     `<button class="filter-tab ${f === 'All' ? 'active' : ''}" onclick="filterCheatTab(this, '${f}')">${f}</button>`
   ).join('');
@@ -662,3 +662,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+// ── Sidebar Toggle ──
+function toggleSidebar() {
+  const sidebar = document.getElementById('lessons-sidebar');
+  const expandBtn = document.getElementById('sidebar-expand-btn');
+  if (!sidebar) return;
+
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  if (expandBtn) {
+    expandBtn.style.display = isCollapsed ? 'flex' : 'none';
+  }
+}
+

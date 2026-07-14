@@ -603,6 +603,17 @@ class VimEngine {
         this.lines.splice(this.cursor.row, 1);
         this.cursor.row--;
       }
+    } else if (key === 'Delete') {
+      const line = this.lines[this.cursor.row];
+      if (this.cursor.col < line.length) {
+        // delete character at cursor position
+        this.lines[this.cursor.row] = line.slice(0, this.cursor.col) + line.slice(this.cursor.col + 1);
+      } else if (this.cursor.row < this.lines.length - 1) {
+        // at end of line: merge next line into current
+        const nextLine = this.lines[this.cursor.row + 1];
+        this.lines[this.cursor.row] = line + nextLine;
+        this.lines.splice(this.cursor.row + 1, 1);
+      }
     } else if (key === 'Enter') {
       const line = this.lines[this.cursor.row];
       const before = line.slice(0, this.cursor.col);
@@ -1158,6 +1169,7 @@ class VimEngine {
         this.cursor.col = indentU.length;
         this.setMode('insert'); this.update(); break;
       case 'x':
+      case 'Delete':
         this.saveUndo();
         const lineX = this.lines[this.cursor.row];
         if (lineX.length > 0) {

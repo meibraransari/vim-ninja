@@ -66,7 +66,13 @@ opt.listchars  = { tab = "▸ ", eol = "¬", trail = "·" }
 vim.cmd("colorscheme elflord")
 
 -- ── Key mappings ───────────────────────────────────────────
-local map = vim.keymap.set
+local function map(mode, lhs, rhs, opts)
+  opts = opts or {}
+  opts.noremap = opts.noremap ~= false
+  opts.silent = opts.silent ~= false
+  vim.api.nvim_set_keymap(mode, lhs, rhs, opts)
+end
+
 local opts = { noremap = true, silent = true }
 
 -- Leader key
@@ -130,24 +136,15 @@ opt.statusline = table.concat({
 })
 
 -- ── Auto commands ──────────────────────────────────────────
-local augroup = vim.api.nvim_create_augroup
-local autocmd = vim.api.nvim_create_autocmd
-
--- Remove trailing whitespace on save
-autocmd("BufWritePre", {
-  pattern = "*",
-  command = [[%s/\s\+$//e]],
-})
-
--- File-type specific indent
-autocmd("FileType", {
-  pattern = { "python" },
-  callback = function()
-    vim.opt_local.tabstop = 4
-    vim.opt_local.shiftwidth = 4
-    vim.opt_local.softtabstop = 4
-  end,
-})
+vim.cmd([[
+  augroup VimNinja
+    autocmd!
+    " Remove trailing whitespace on save
+    autocmd BufWritePre * silent! %s/\s\+$//e
+    " File-type specific indent for python
+    autocmd FileType python setlocal tabstop=4 shiftwidth=4 softtabstop=4
+  augroup END
+]])
 
 -- Auto-create undo directory
 local undodir = vim.fn.expand("~/.vim/undodir")
@@ -156,10 +153,5 @@ if vim.fn.isdirectory(undodir) == 0 then
 end
 
 -- ── Print welcome on startup ───────────────────────────────
-vim.api.nvim_create_autocmd("VimEnter", {
-  callback = function()
-    vim.defer_fn(function()
-      print("⚡ VimNinja Sandbox — Happy Learning!")
-    end, 100)
-  end,
-})
+-- Keep this fully compatible via legacy command
+vim.cmd('autocmd VimEnter * echo "⚡ VimNinja Sandbox — Happy Learning!"')

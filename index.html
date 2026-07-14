@@ -66,12 +66,12 @@
         </div>
         <div class="hero-stats">
           <div class="stat">
-            <span class="stat-num">200+</span>
+            <span class="stat-num">350+</span>
             <span class="stat-label">Commands</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat">
-            <span class="stat-num">30</span>
+            <span class="stat-num">26</span>
             <span class="stat-label">Lessons</span>
           </div>
           <div class="stat-divider"></div>
@@ -151,12 +151,15 @@
       <aside class="lessons-sidebar" id="lessons-sidebar">
         <div class="sidebar-header">
           <h2>Lessons</h2>
-          <div class="progress-ring-wrap">
-            <svg class="progress-ring" viewBox="0 0 60 60">
-              <circle class="progress-ring-bg" cx="30" cy="30" r="24"/>
-              <circle class="progress-ring-fill" id="progress-ring-fill" cx="30" cy="30" r="24"/>
-            </svg>
-            <span class="progress-ring-text" id="progress-ring-text">0%</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="progress-ring-wrap">
+              <svg class="progress-ring" viewBox="0 0 60 60">
+                <circle class="progress-ring-bg" cx="30" cy="30" r="24"/>
+                <circle class="progress-ring-fill" id="progress-ring-fill" cx="30" cy="30" r="24"/>
+              </svg>
+              <span class="progress-ring-text" id="progress-ring-text">0%</span>
+            </div>
+            <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Hide Sidebar">◂</button>
           </div>
         </div>
         <div class="sidebar-search">
@@ -164,6 +167,11 @@
         </div>
         <div class="lesson-list" id="lesson-list"></div>
       </aside>
+
+      <!-- Expand Sidebar Button (Shown only when sidebar is hidden) -->
+      <button class="sidebar-expand-btn" id="sidebar-expand-btn" onclick="toggleSidebar()" title="Show Sidebar" style="display: none;">
+        <span>▸</span>
+      </button>
 
       <!-- Lesson content -->
       <div class="lesson-content" id="lesson-content">
