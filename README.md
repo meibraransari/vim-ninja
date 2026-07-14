@@ -6,8 +6,8 @@
 
 ## 🚀 Quick Start
 
-Just open `index.html` in your browser — no server needed!
-
+### 🌐 Option A: Run directly in the Browser (No setup)
+Just open `index.html` in your browser:
 ```bash
 # Windows
 start index.html
@@ -15,6 +15,50 @@ start index.html
 # Mac/Linux
 open index.html
 ```
+
+---
+
+### 🐳 Option B: Run via Docker (Nginx server + Real Terminal Vim Sandbox)
+We provide a containerized setup to run the browser platform via Nginx and spin up an isolated interactive playground containing classic `Vim`, `Neovim`, `tmux`, and `ripgrep` for practicing on real files.
+
+#### 1. Setup Environment
+Copy the example environment file:
+```bash
+cp .env.example .env
+```
+
+#### 2. Start Services
+Build and launch the containers:
+```bash
+docker compose up -d
+```
+* The web application will be accessible at: **`http://localhost:8080`**
+* Standard Nginx logs and your sandbox home directory (`/home/ninja`) are persisted in named volumes.
+
+#### 3. Access the Real Vim Sandbox
+To open a shell and practice using real Vim/Neovim inside the container:
+```bash
+docker exec -it vimninja-sandbox bash
+```
+
+---
+
+## 🛠️ Makefile Reference
+If you have `make` installed, you can use these helper commands to control your Docker setup:
+
+| Command | Action |
+|---------|--------|
+| `make install` | Create `.env` from `.env.example` |
+| `make up` | Start all services in the background |
+| `make down` | Stop all services and containers |
+| `make build` | Rebuild images from scratch (no cache) |
+| `make logs` | Follow logs from all containers |
+| `make ps` | Show status of running containers |
+| `make shell-sandbox` | Connect to the interactive bash sandbox |
+| `make vim-sandbox` | Directly start Vim on the first practice exercise |
+| `make nvim-sandbox`| Directly start Neovim on the first practice exercise |
+| `make clean` | Stop containers and wipe associated Docker volumes |
+
 
 ---
 
