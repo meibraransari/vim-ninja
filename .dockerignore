@@ -1,0 +1,58 @@
+# ============================================================
+# .dockerignore — Files to exclude from Docker build context
+# ============================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker files themselves (already in context)
+# (don't exclude — needed by compose)
+
+# Docs
+*.md
+!README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node (if added later)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+
+# Build artifacts
+dist/
+build/
+*.min.js
+*.min.css
+
+# Test files
+*.test.js
+*.spec.js
+__tests__/
+coverage/
+
+# Temp files
+tmp/
+temp/

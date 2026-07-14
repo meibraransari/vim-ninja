@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vim Ninja — Interactive Vim Learning Platform</title>
+  <meta name="description" content="Learn Vim interactively with Vim Ninja. Practice Vim commands, complete challenges, and master the world's most powerful text editor step by step." />
+  <meta name="keywords" content="vim,learn vim,vim tutorial,vim commands,vim motions,interactive vim,vim practice,neovim" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-grid"></div>
+  <div class="floating-particles" id="particles"></div>
+
+  <!-- Header -->
+  <header class="header" id="header">
+    <div class="header-inner">
+      <a href="#" class="logo" onclick="showHome()">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Vim<span class="logo-accent">Ninja</span></span>
+      </a>
+      <nav class="nav">
+        <a href="#" class="nav-link" onclick="showHome(); return false;">Home</a>
+        <a href="#" class="nav-link" onclick="showLessons(); return false;">Lessons</a>
+        <a href="#" class="nav-link" onclick="showCheatsheet(); return false;">Cheatsheet</a>
+        <a href="#" class="nav-link" onclick="showProgress(); return false;">Progress</a>
+      </nav>
+      <div class="header-actions">
+        <div class="xp-badge" id="xp-badge">
+          <span class="xp-icon">🥷</span>
+          <span id="total-xp">0 XP</span>
+        </div>
+        <div class="streak-badge" id="streak-badge">
+          <span>🔥</span>
+          <span id="streak-count">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HOME PAGE -->
+  <main id="page-home" class="page active">
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge">🥷 Master the Art of Vim</div>
+        <h1 class="hero-title">
+          Become a<br />
+          <span class="gradient-text">Vim Ninja</span>
+        </h1>
+        <p class="hero-desc">
+          Learn Vim through interactive lessons, real practice in the browser,
+          and progressive challenges. From total beginner to Vim wizard — one keystroke at a time.
+        </p>
+        <div class="hero-btns">
+          <button class="btn btn-primary btn-lg" onclick="startLearning()">
+            <span>Start Learning</span>
+            <span class="btn-arrow">→</span>
+          </button>
+          <button class="btn btn-ghost btn-lg" onclick="showCheatsheet()">
+            View Cheatsheet
+          </button>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <span class="stat-num">200+</span>
+            <span class="stat-label">Commands</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-num">30</span>
+            <span class="stat-label">Lessons</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-num">3</span>
+            <span class="stat-label">Skill Levels</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="terminal-mockup" id="hero-terminal">
+          <div class="terminal-bar">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+            <span class="terminal-title">practice.js — VimNinja</span>
+          </div>
+          <div class="terminal-body">
+            <div class="line-numbers">
+              <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+              <span>6</span><span>7</span><span>8</span>
+            </div>
+            <div class="code-area" id="hero-code">
+              <div class="code-line"><span class="kw">const</span> <span class="fn">ninja</span> <span class="op">=</span> <span class="str">"legendary"</span><span class="punc">;</span></div>
+              <div class="code-line"></div>
+              <div class="code-line"><span class="kw">function</span> <span class="fn">learnVim</span><span class="punc">() {</span></div>
+              <div class="code-line">  <span class="cm">// master the editor</span></div>
+              <div class="code-line">  <span class="fn">console</span><span class="punc">.</span><span class="fn">log</span><span class="punc">(</span><span class="str">"Hello, Vim!"</span><span class="punc">);</span></div>
+              <div class="code-line">  <span class="kw">return</span> <span class="fn">ninja</span><span class="punc">;</span></div>
+              <div class="code-line"><span class="punc">}</span></div>
+              <div class="code-line cursor-line"><span class="vim-cursor"> </span></div>
+            </div>
+          </div>
+          <div class="mode-bar"><span class="mode-indicator mode-normal">NORMAL</span> <span class="statusbar-file">practice.js</span> <span class="statusbar-pos">8,1</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature cards -->
+    <section class="features">
+      <h2 class="section-title">Why Vim Ninja?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎮</div>
+          <h3>Interactive Practice</h3>
+          <p>A real Vim emulator right in your browser. Type actual Vim commands and see instant results.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📈</div>
+          <h3>Progressive Lessons</h3>
+          <p>Structured curriculum from complete beginner to advanced Vim user with 30+ lessons.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏆</div>
+          <h3>Challenges & XP</h3>
+          <p>Complete challenges to earn XP, unlock levels, and track your mastery with a visual dashboard.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Command Reference</h3>
+          <p>200+ commands organized by category with examples and descriptions always at your fingertips.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Learning path preview -->
+    <section class="path-section">
+      <h2 class="section-title">Your Learning Path</h2>
+      <div class="path-grid" id="home-path-grid"></div>
+    </section>
+  </main>
+
+  <!-- LESSONS PAGE -->
+  <main id="page-lessons" class="page">
+    <div class="lessons-layout">
+      <!-- Sidebar -->
+      <aside class="lessons-sidebar" id="lessons-sidebar">
+        <div class="sidebar-header">
+          <h2>Lessons</h2>
+          <div class="progress-ring-wrap">
+            <svg class="progress-ring" viewBox="0 0 60 60">
+              <circle class="progress-ring-bg" cx="30" cy="30" r="24"/>
+              <circle class="progress-ring-fill" id="progress-ring-fill" cx="30" cy="30" r="24"/>
+            </svg>
+            <span class="progress-ring-text" id="progress-ring-text">0%</span>
+          </div>
+        </div>
+        <div class="sidebar-search">
+          <input type="text" id="lesson-search" placeholder="🔍 Search lessons..." oninput="filterLessons()" />
+        </div>
+        <div class="lesson-list" id="lesson-list"></div>
+      </aside>
+
+      <!-- Lesson content -->
+      <div class="lesson-content" id="lesson-content">
+        <div class="lesson-welcome" id="lesson-welcome">
+          <div class="welcome-icon">📚</div>
+          <h2>Select a lesson to begin</h2>
+          <p>Choose from the sidebar to start learning Vim commands interactively.</p>
+        </div>
+        <div class="lesson-detail" id="lesson-detail" style="display:none">
+          <div class="lesson-header">
+            <div class="lesson-meta">
+              <span class="lesson-level-badge" id="detail-level-badge"></span>
+              <span class="lesson-category" id="detail-category"></span>
+            </div>
+            <h1 class="lesson-title" id="detail-title"></h1>
+            <p class="lesson-desc" id="detail-desc"></p>
+          </div>
+
+          <!-- Command reference for lesson -->
+          <div class="commands-section" id="commands-section">
+            <h2 class="section-h2">Commands in this lesson</h2>
+            <div class="commands-grid" id="commands-grid"></div>
+          </div>
+
+          <!-- Explanation sections -->
+          <div class="explanation-sections" id="explanation-sections"></div>
+
+          <!-- Practice zone -->
+          <div class="practice-section">
+            <h2 class="section-h2">
+              <span>🎯 Practice Zone</span>
+              <div class="practice-actions">
+                <button class="btn btn-sm btn-ghost" onclick="resetVim()" id="reset-btn">↺ Reset</button>
+                <button class="btn btn-sm" onclick="showHint()" id="hint-btn">💡 Hint</button>
+              </div>
+            </h2>
+            <div class="challenge-instruction" id="challenge-instruction"></div>
+            <div class="vim-container" id="vim-container">
+              <div class="vim-window">
+                <div class="vim-titlebar">
+                  <span class="dot dot-red"></span>
+                  <span class="dot dot-yellow"></span>
+                  <span class="dot dot-green"></span>
+                  <span class="vim-filename" id="vim-filename">untitled.txt</span>
+                </div>
+                <div class="vim-body" id="vim-body" tabindex="0" onclick="focusVim()">
+                  <div class="vim-gutter" id="vim-gutter"></div>
+                  <div class="vim-text" id="vim-text"></div>
+                </div>
+                <div class="vim-statusbar">
+                  <span class="mode-indicator" id="vim-mode-indicator">NORMAL</span>
+                  <span class="vim-status-file" id="vim-status-file">untitled.txt</span>
+                  <span class="vim-status-pos" id="vim-status-pos">1,1</span>
+                  <span class="vim-status-msg" id="vim-status-msg"></span>
+                </div>
+                <div class="vim-cmdline" id="vim-cmdline" style="display:none">
+                  <span class="cmdline-prompt">:</span>
+                  <span class="cmdline-input" id="cmdline-input"></span>
+                  <span class="cmdline-cursor">█</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback -->
+            <div class="feedback-panel" id="feedback-panel" style="display:none">
+              <div class="feedback-icon" id="feedback-icon"></div>
+              <div class="feedback-text">
+                <h3 id="feedback-title"></h3>
+                <p id="feedback-msg"></p>
+              </div>
+              <button class="btn btn-primary" id="feedback-btn" onclick="nextLesson()">Next Lesson →</button>
+            </div>
+
+            <!-- Hint panel -->
+            <div class="hint-panel" id="hint-panel" style="display:none">
+              <div class="hint-icon">💡</div>
+              <p id="hint-text"></p>
+            </div>
+          </div>
+
+          <!-- Navigation -->
+          <div class="lesson-nav">
+            <button class="btn btn-ghost" id="prev-lesson-btn" onclick="goPrevLesson()">← Previous</button>
+            <button class="btn btn-primary" id="next-lesson-btn" onclick="nextLesson()">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- CHEATSHEET PAGE -->
+  <main id="page-cheatsheet" class="page">
+    <div class="cheatsheet-page">
+      <div class="cheatsheet-header">
+        <h1>Vim Command <span class="gradient-text">Cheatsheet</span></h1>
+        <p>Complete reference of 200+ Vim commands, organized by category</p>
+        <div class="cheatsheet-search-wrap">
+          <input type="text" id="cheat-search" class="cheat-search" placeholder="🔍 Search commands..." oninput="filterCheatsheet()" />
+        </div>
+        <div class="cheatsheet-filter-tabs" id="cheatsheet-filter-tabs"></div>
+      </div>
+      <div class="cheatsheet-grid" id="cheatsheet-grid"></div>
+    </div>
+  </main>
+
+  <!-- PROGRESS PAGE -->
+  <main id="page-progress" class="page">
+    <div class="progress-page">
+      <h1>Your <span class="gradient-text">Progress</span></h1>
+      <div class="progress-overview">
+        <div class="progress-card">
+          <div class="progress-card-icon">🥷</div>
+          <div class="progress-card-num" id="prog-xp">0</div>
+          <div class="progress-card-label">Total XP</div>
+        </div>
+        <div class="progress-card">
+          <div class="progress-card-icon">✅</div>
+          <div class="progress-card-num" id="prog-lessons">0</div>
+          <div class="progress-card-label">Lessons Done</div>
+        </div>
+        <div class="progress-card">
+          <div class="progress-card-icon">🔥</div>
+          <div class="progress-card-num" id="prog-streak">0</div>
+          <div class="progress-card-label">Day Streak</div>
+        </div>
+        <div class="progress-card">
+          <div class="progress-card-icon">⚡</div>
+          <div class="progress-card-num" id="prog-commands">0</div>
+          <div class="progress-card-label">Commands Learned</div>
+        </div>
+      </div>
+      <div class="level-progress-section">
+        <h2>Ninja Level</h2>
+        <div class="level-bar-wrap">
+          <div class="level-bar" id="level-bar"></div>
+        </div>
+        <div class="level-labels" id="level-labels"></div>
+      </div>
+      <div class="achievements-section">
+        <h2>Achievements</h2>
+        <div class="achievements-grid" id="achievements-grid"></div>
+      </div>
+      <div class="lesson-progress-section">
+        <h2>Lesson Progress</h2>
+        <div class="lesson-progress-list" id="lesson-progress-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="vim-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

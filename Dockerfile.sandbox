@@ -1,0 +1,92 @@
+# ============================================================
+# VimNinja — Sandbox Dockerfile
+# Ubuntu-based isolated Vim/Neovim practice environment
+# Matches vim_project spec: vim, neovim, git, tmux, ripgrep, curl
+# ============================================================
+
+FROM ubuntu:24.04 AS base
+
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Kolkata
+ENV TERM=xterm-256color
+ENV HOME=/home/ninja
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# ── System packages ────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core tools from vim_project spec
+    vim \
+    neovim \
+    git \
+    tmux \
+    ripgrep \
+    curl \
+    wget \
+    # Shell and utilities
+    bash \
+    bash-completion \
+    locales \
+    ca-certificates \
+    tzdata \
+    less \
+    man-db \
+    # Text processing
+    sed \
+    awk \
+    grep \
+    # Dev utils
+    python3 \
+    python3-pip \
+    && locale-gen en_US.UTF-8 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# ── Create non-root user (security — vim_project spec) ─────
+RUN groupadd --gid 1000 ninja \
+    && useradd --uid 1000 --gid ninja --shell /bin/bash \
+       --create-home --home-dir /home/ninja ninja
+
+# ── Practice files directory ────────────────────────────────
+RUN mkdir -p /home/ninja/practice \
+             /home/ninja/.vim/colors \
+             /home/ninja/.config/nvim
+
+# ── Sample vimrc (from your vimrc files) ───────────────────
+COPY --chown=ninja:ninja docker/vimrc /home/ninja/.vimrc
+
+# ── Sample Neovim init.lua ─────────────────────────────────
+COPY --chown=ninja:ninja docker/init.lua /home/ninja/.config/nvim/init.lua
+
+# ── Practice challenge files ───────────────────────────────
+COPY --chown=ninja:ninja docker/practice/ /home/ninja/practice/
+
+# ── tmux config ────────────────────────────────────────────
+COPY --chown=ninja:ninja docker/tmux.conf /home/ninja/.tmux.conf
+
+# ── Greeting / MOTD ────────────────────────────────────────
+RUN echo '#!/bin/bash\n\
+echo ""\n\
+echo "  ⚡  Welcome to VimNinja Sandbox"\n\
+echo "  ─────────────────────────────────────"\n\
+echo "  vim      — classic Vim editor"\n\
+echo "  nvim     — Neovim editor"\n\
+echo "  tmux     — terminal multiplexer"\n\
+echo "  rg       — ripgrep fast search"\n\
+echo ""\n\
+echo "  Practice files: ~/practice/"\n\
+echo "  Start with: vim ~/practice/01-modes.txt"\n\
+echo ""' > /home/ninja/.bashrc_greeting \
+    && echo 'source ~/.bashrc_greeting' >> /home/ninja/.bashrc
+
+# ── Ownership ──────────────────────────────────────────────
+RUN chown -R ninja:ninja /home/ninja
+
+# ── Switch to non-root user ────────────────────────────────
+USER ninja
+WORKDIR /home/ninja
+
+# Container stays alive — exec into it with:
+# docker exec -it vimninja-sandbox bash
+CMD ["bash", "--login"]

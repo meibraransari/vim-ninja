@@ -1,0 +1,61 @@
+LESSON 1: VIM MODES
+===================
+
+Vim has multiple modes. Understanding them is the key to Vim mastery.
+
+NORMAL MODE (default when you open a file)
+------------------------------------------
+- You are currently reading this in NORMAL mode
+- Keys are COMMANDS, not text input
+- Navigate with: h j k l
+- Press 'i' to enter INSERT mode
+
+INSERT MODE
+-----------
+- Press 'i' to enter (cursor before current char)
+- Press 'a' to enter (cursor after current char)
+- Press 'I' to insert at beginning of line
+- Press 'A' to insert at end of line
+- Press 'o' to open new line below
+- Press 'O' to open new line above
+- Press Esc to return to NORMAL mode
+
+VISUAL MODE
+-----------
+- Press 'v' for character selection
+- Press 'V' for line selection
+- Press Ctrl+v for block selection
+- Press Esc to exit
+
+
+EXERCISES
+=========
+
+Exercise 1: Switching modes
+   - Press 'i' to enter INSERT mode
+   - Type your name here: [YOUR NAME]
+   - Press Esc to go back to NORMAL mode
+
+Exercise 2: Insert at line end
+   - Move to this line
+   - Press 'A' to append at end
+   - Type ": done!" and press Esc
+   - [EXERCISE 2 HERE]
+
+Exercise 3: New line
+   - Move your cursor to this line
+   - Press 'o' to open a new line below
+   - Type "I created this line!" and press Esc
+
+Exercise 4: Visual select
+   - Press 'V' to select this entire line
+   - Then press Esc to deselect
+   - [SELECT THIS LINE]
+
+
+TIPS
+====
+- The mode is shown at the bottom of the screen
+- -- INSERT -- means you are in Insert mode
+- No indicator = Normal mode
+- -- VISUAL -- means you are in Visual mode

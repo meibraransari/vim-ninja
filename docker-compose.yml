@@ -1,0 +1,152 @@
+# ============================================================
+# VimNinja — Docker Compose
+# ============================================================
+# Services:
+#   frontend   — nginx serving the static Vim Ninja app
+#   vim-sandbox — isolated Ubuntu container with real vim/neovim
+#   caddy      — optional reverse proxy (uncomment to enable)
+#
+# Usage:
+#   docker compose up -d          → start everything
+#   docker compose logs -f        → follow logs
+#   docker compose down           → stop & remove containers
+#   docker compose build --no-cache → rebuild images
+# ============================================================
+
+name: vimninja
+
+# ── Reusable defaults ──────────────────────────────────────
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-restart: &default-restart
+  restart: unless-stopped
+
+# ── Networks ──────────────────────────────────────────────
+networks:
+  vimninja-net:
+    name: vimninja-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+# ── Volumes ───────────────────────────────────────────────
+volumes:
+  nginx-logs:
+    name: vimninja-nginx-logs
+  sandbox-home:
+    name: vimninja-sandbox-home
+
+# ── Services ──────────────────────────────────────────────
+services:
+
+  # ─────────────────────────────────────────────────────────
+  # frontend: nginx static site
+  # http://localhost:8080
+  # ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    image: vimninja/frontend:latest
+    container_name: vimninja-frontend
+    <<: *default-restart
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks:
+      - vimninja-net
+    volumes:
+      - nginx-logs:/var/log/nginx
+    environment:
+      - TZ=${TZ:-Asia/Kolkata}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *default-logging
+    labels:
+      - "com.vimninja.service=frontend"
+      - "com.vimninja.description=Static Vim Ninja learning platform"
+
+  # ─────────────────────────────────────────────────────────
+  # vim-sandbox: real vim/neovim practice environment
+  # (as specified in vim_project — isolated container)
+  # exec: docker exec -it vimninja-sandbox bash
+  # ─────────────────────────────────────────────────────────
+  vim-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.sandbox
+    image: vimninja/sandbox:latest
+    container_name: vimninja-sandbox
+    <<: *default-restart
+    networks:
+      - vimninja-net
+    volumes:
+      - sandbox-home:/home/ninja
+    environment:
+      - TZ=${TZ:-Asia/Kolkata}
+      - TERM=xterm-256color
+    # Resource limits (security — as per vim_project spec)
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+    # No privileged mode (security)
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    read_only: false          # vim needs write access to home
+    tmpfs:
+      - /tmp:size=64m,noexec  # tmp in RAM
+    healthcheck:
+      test: ["CMD", "vim", "--version"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging: *default-logging
+    labels:
+      - "com.vimninja.service=vim-sandbox"
+      - "com.vimninja.description=Isolated Vim/Neovim practice environment"
+    # Keep container alive
+    command: ["tail", "-f", "/dev/null"]
+
+  # ─────────────────────────────────────────────────────────
+  # caddy: optional HTTPS reverse proxy (uncomment to enable)
+  # Automatically provisions TLS via Let's Encrypt
+  # ─────────────────────────────────────────────────────────
+  # caddy:
+  #   image: caddy:2-alpine
+  #   container_name: vimninja-caddy
+  #   <<: *default-restart
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   networks:
+  #     - vimninja-net
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy-data:/data
+  #     - caddy-config:/config
+  #   environment:
+  #     - DOMAIN=${DOMAIN:-localhost}
+  #   logging: *default-logging

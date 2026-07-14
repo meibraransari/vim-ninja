@@ -1,0 +1,77 @@
+LESSON 2: MOVEMENT
+==================
+
+Master movement and you master half of Vim.
+
+BASIC MOVEMENT (hjkl)
+---------------------
+  h ← left      j ↓ down      k ↑ up      l → right
+
+WORD MOVEMENT
+-------------
+  w   → jump to start of next word
+  W   → jump to start of next WORD (spaces only)
+  e   → jump to end of current word
+  E   → jump to end of current WORD
+  b   → jump back to start of word
+  B   → jump back to start of WORD
+
+LINE MOVEMENT
+-------------
+  0   → start of line (column 0)
+  ^   → first non-blank character
+  $   → end of line
+  g_  → last non-blank character
+
+FILE MOVEMENT
+-------------
+  gg  → go to first line
+  G   → go to last line
+  5G  → go to line 5
+  :42 → go to line 42
+
+SCREEN MOVEMENT
+---------------
+  H   → top of screen
+  M   → middle of screen
+  L   → bottom of screen
+  Ctrl+d → scroll down half page
+  Ctrl+u → scroll up half page
+  Ctrl+f → page forward
+  Ctrl+b → page backward
+
+FIND ON LINE
+------------
+  fx  → jump to next 'x' on line
+  Fx  → jump to previous 'x' on line
+  tx  → jump to just before 'x'
+  Tx  → jump to just after 'x' (backward)
+  ;   → repeat last f/t/F/T
+  ,   → repeat last f/t/F/T backward
+
+
+EXERCISES
+=========
+(Navigate this file using the commands above)
+
+Exercise 1: Use 'w' to jump word by word through this sentence.
+The quick brown fox jumped over the lazy dog and ran away.
+
+Exercise 2: Use '$' to jump to end of line, then '0' to jump to start.
+   This is a line with leading spaces for the ^ and 0 exercise.
+
+Exercise 3: Use 'f.' to jump to the next period on this line.
+First sentence. Second sentence. Third sentence. Fourth sentence.
+
+Exercise 4: Use 'G' to jump to the last line, then 'gg' to jump back.
+
+Exercise 5: Use '5G' to jump to line 5 of this file.
+(Count from the top and verify you landed on line 5)
+
+
+
+Keep going down...
+
+Almost there...
+
+Last line: you made it! Now use 'gg' to go back to the top.

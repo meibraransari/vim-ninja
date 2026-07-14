@@ -1,0 +1,147 @@
+" ============================================================
+" VimNinja Sandbox — .vimrc
+" Based on your vimrc files from the workspace
+" ============================================================
+
+" Don't try to be vi compatible
+set nocompatible
+
+" Turn on syntax highlighting
+syntax on
+
+" For plugins to load correctly
+filetype plugin indent on
+
+" ── Display ──────────────────────────────────────────────
+set number              " Show line numbers
+set relativenumber      " Relative line numbers (great for motions!)
+set ruler               " Show cursor position in status bar
+set showcmd             " Show partial command in status bar
+set showmode            " Show current mode
+set cursorline          " Highlight current line
+set cursorcolumn        " Highlight current column
+set laststatus=2        " Always show status line
+set wildmenu            " Enhanced command-line completion
+set visualbell          " Blink cursor on error (no beep)
+
+" ── Encoding ─────────────────────────────────────────────
+set encoding=utf-8
+set fileencoding=utf-8
+
+" ── Whitespace & Indentation ─────────────────────────────
+set tabstop=2           " Tab = 2 spaces
+set shiftwidth=2        " Indent = 2 spaces
+set softtabstop=2       " Soft tab = 2 spaces
+set expandtab           " Use spaces, not tabs
+set autoindent          " Auto-indent new lines
+set copyindent          " Copy indent from previous line
+set smartindent         " Smart indentation
+set noshiftround        " Don't round indent to shiftwidth
+
+" ── Line wrapping ─────────────────────────────────────────
+set wrap
+set textwidth=80
+set colorcolumn=81      " Highlight column 81
+
+" ── Search ───────────────────────────────────────────────
+set hlsearch            " Highlight search results
+set incsearch           " Incremental search
+set ignorecase          " Case-insensitive search
+set smartcase           " Smart case (case-sensitive if uppercase used)
+set showmatch           " Highlight matching brackets
+
+" Clear search highlight with <leader><space>
+nnoremap <leader><space> :nohlsearch<CR>
+
+" ── Cursor motion ─────────────────────────────────────────
+set scrolloff=5         " Keep 5 lines above/below cursor
+set backspace=indent,eol,start
+set matchpairs+=<:>     " Match <> pairs with %
+
+" ── Buffers & Files ───────────────────────────────────────
+set hidden              " Allow hidden buffers
+set autoread            " Auto-reload files changed outside vim
+set nobackup            " No backup files
+set noswapfile          " No swap files
+set undofile            " Persistent undo
+set undodir=/home/ninja/.vim/undodir
+
+" ── Performance ──────────────────────────────────────────
+set ttyfast
+set lazyredraw          " Don't redraw during macros
+
+" ── Colors ───────────────────────────────────────────────
+set t_Co=256
+set background=dark
+colorscheme elflord     " Built-in dark theme
+
+" ── Key mappings ─────────────────────────────────────────
+let mapleader = ","
+
+" jk to exit insert mode (common mapping)
+inoremap jk <ESC>
+
+" Move up/down by visual line (good for wrapped lines)
+nnoremap j gj
+nnoremap k gk
+
+" Fast save
+nnoremap <leader>w :w<CR>
+
+" Fast quit
+nnoremap <leader>q :q<CR>
+
+" Toggle line numbers
+nnoremap <leader>n :set relativenumber!<CR>
+
+" Show/hide whitespace
+set listchars=tab:▸\ ,eol:¬,trail:·
+nnoremap <leader>l :set list!<CR>
+
+" Window navigation
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Fast buffer navigation
+nnoremap <leader>b :ls<CR>:b<Space>
+nnoremap <Tab> :bnext<CR>
+nnoremap <S-Tab> :bprev<CR>
+
+" Center search results
+nnoremap n nzz
+nnoremap N Nzz
+
+" Indent/unindent in visual mode and stay in visual mode
+vnoremap < <gv
+vnoremap > >gv
+
+" Yank to end of line (consistent with D and C)
+nnoremap Y y$
+
+" Make . work with visual mode selections
+vnoremap . :norm.<CR>
+
+" ── Status line ──────────────────────────────────────────
+set statusline=
+set statusline+=\ %{mode()}\ \|
+set statusline+=\ %f
+set statusline+=\ %m%r
+set statusline+=%=
+set statusline+=\ %{&fileencoding}\ \|
+set statusline+=\ %{&filetype}\ \|
+set statusline+=\ %l:%c\ /\ %L\ 
+
+" ── File-type specific ────────────────────────────────────
+autocmd FileType python setlocal tabstop=4 shiftwidth=4 softtabstop=4
+autocmd FileType yaml   setlocal tabstop=2 shiftwidth=2 softtabstop=2
+autocmd FileType json   setlocal tabstop=2 shiftwidth=2 softtabstop=2
+
+" Remove trailing whitespace on save
+autocmd BufWritePre * :%s/\s\+$//e
+
+" ── Create undodir if missing ─────────────────────────────
+if !isdirectory("/home/ninja/.vim/undodir")
+    call mkdir("/home/ninja/.vim/undodir", "p")
+endif
