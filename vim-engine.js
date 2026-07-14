@@ -537,6 +537,26 @@ class VimEngine {
       this.setStatus(regStr);
     } else if (cmd === 'marks') {
       this.setStatus(Object.entries(this.marks).map(([k,v]) => `${k}: ${v.row+1},${v.col+1}`).join('  ') || 'No marks');
+    } else if (cmd === 'sp' || cmd.startsWith('split')) {
+      this.setStatus('Split horizontally (simulated)');
+    } else if (cmd === 'vsp' || cmd.startsWith('vsplit')) {
+      this.setStatus('Split vertically (simulated)');
+    } else if (cmd === 'bn' || cmd === 'bnext') {
+      this.setStatus('Buffer next (simulated)');
+    } else if (cmd === 'bp' || cmd === 'bprev') {
+      this.setStatus('Buffer previous (simulated)');
+    } else if (cmd === 'bd' || cmd === 'bdelete') {
+      this.setStatus('Buffer deleted (simulated)');
+    } else if (cmd === 'tabnew') {
+      this.setStatus('New tab opened (simulated)');
+    } else if (cmd === 'tabn' || cmd === 'tabnext') {
+      this.setStatus('Next tab (simulated)');
+    } else if (cmd === 'tabp' || cmd === 'tabprev') {
+      this.setStatus('Previous tab (simulated)');
+    } else if (cmd === 'tabc' || cmd === 'tabclose') {
+      this.setStatus('Tab closed (simulated)');
+    } else if (cmd === 'h' || cmd === 'help' || cmd.startsWith('help ')) {
+      this.setStatus('Vim Help documentation (simulated)');
     } else if (cmd.startsWith('set ')) {
       this.setStatus(`(${cmd} applied — simulated)`);
     } else if (cmd === 'ls' || cmd === 'files' || cmd === 'buffers') {
@@ -613,6 +633,19 @@ class VimEngine {
         const nextLine = this.lines[this.cursor.row + 1];
         this.lines[this.cursor.row] = line + nextLine;
         this.lines.splice(this.cursor.row + 1, 1);
+      }
+    } else if (key === 'Ctrl+w') {
+      const line = this.lines[this.cursor.row];
+      if (this.cursor.col > 0) {
+        let col = this.cursor.col - 1;
+        while (col > 0 && /\s/.test(line[col])) col--;
+        if (/\w/.test(line[col])) {
+          while (col > 0 && /\w/.test(line[col - 1])) col--;
+        } else {
+          while (col > 0 && !/\w/.test(line[col - 1]) && !/\s/.test(line[col - 1])) col--;
+        }
+        this.lines[this.cursor.row] = line.slice(0, col) + line.slice(this.cursor.col);
+        this.cursor.col = col;
       }
     } else if (key === 'Enter') {
       const line = this.lines[this.cursor.row];
@@ -901,6 +934,7 @@ class VimEngine {
     if (key === 'Ctrl+r') { this.redo(); return; }
     if (key === 'Ctrl+o') { this.jumpBack(); return; }
     if (key === 'Ctrl+i') { this.jumpForward(); return; }
+    if (key === 'Ctrl+w') { this.cmdBuffer = 'Ctrl+w'; return; }
     if (key === 'Ctrl+d') {
       const jump = Math.floor(this.lines.length / 4) || 1;
       this.cursor.row = Math.min(this.cursor.row + jump, this.lines.length - 1);
@@ -934,6 +968,24 @@ class VimEngine {
     this.countBuffer = '';
 
     // Multi-key commands accumulation
+    if (this.cmdBuffer === 'Ctrl+w') {
+      if (key === 'v') {
+        this.setStatus('Split window vertically (simulated)');
+      } else if (key === 's') {
+        this.setStatus('Split window horizontally (simulated)');
+      } else if (key === 'w' || key === 'Ctrl+w') {
+        this.setStatus('Switch window focus (simulated)');
+      } else if (key === 'q') {
+        this.setStatus('Close split window (simulated)');
+      } else if (key === '=') {
+        this.setStatus('Equalize splits (simulated)');
+      } else {
+        this.setStatus(`Window cmd: Ctrl+w ${key}`);
+      }
+      this.cmdBuffer = '';
+      this.update(); return;
+    }
+
     if (this.cmdBuffer === 'g') {
       if (key === 'g') {
         this.handleNormalMovement('gg');

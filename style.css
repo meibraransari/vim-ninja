@@ -44,14 +44,88 @@
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
   --text-muted: #475569;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Segoe UI Mono', Consolas, 'Courier New', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --radius: 12px;
   --radius-sm: 8px;
   --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
   --transition: 0.2s ease;
   --header-h: 64px;
 }
+
+body.light-theme {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-sidebar: #e2e8f0;
+  --border: rgba(99, 102, 241, 0.12);
+  --border-active: rgba(99, 102, 241, 0.5);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.04);
+}
+
+/* Light Theme Element Customizations */
+body.light-theme .header.scrolled {
+  background: rgba(248, 250, 252, 0.98);
+}
+body.light-theme .terminal-mockup,
+body.light-theme .vim-window {
+  background: #ffffff;
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 0 20px 50px rgba(99, 102, 241, 0.08);
+}
+body.light-theme .terminal-bar,
+body.light-theme .vim-titlebar {
+  background: #f1f5f9;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+body.light-theme .stat-divider {
+  background: rgba(99, 102, 241, 0.12);
+}
+body.light-theme .vim-text {
+  color: var(--text-primary);
+}
+body.light-theme .vim-cell.cursor-cell {
+  background: #0f172a;
+  color: #ffffff;
+}
+body.light-theme .vim-insert-cursor {
+  background: #0891b2;
+  box-shadow: 0 0 6px #0891b2, 0 0 12px rgba(8,145,178,0.4);
+}
+body.light-theme .line-numbers {
+  border-right-color: rgba(99, 102, 241, 0.08);
+  color: #94a3b8;
+}
+body.light-theme .vim-gutter {
+  border-right-color: rgba(99, 102, 241, 0.08);
+  color: #94a3b8;
+}
+
+/* Syntax Highlighting Light Theme Overrides */
+body.light-theme .kw { color: #d73a49; font-weight: 600; }
+body.light-theme .fn { color: #6f42c1; }
+body.light-theme .op { color: #d73a49; }
+body.light-theme .str { color: #032f62; }
+body.light-theme .punc { color: #24292e; }
+body.light-theme .cm { color: #6a737d; font-style: italic; }
+body.light-theme .num { color: #005cc5; }
+
+body.light-theme .header-icon-btn {
+  background: rgba(0, 0, 0, 0.03);
+}
+body.light-theme .header-icon-btn:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+body.light-theme .bg-grid {
+  opacity: 0.15;
+  background-image: linear-gradient(rgba(99, 102, 241, 0.07) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(99, 102, 241, 0.07) 1px, transparent 1px);
+}
+
 
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -167,6 +241,33 @@ input { font-family: inherit; }
 }
 .xp-badge:hover, .streak-badge:hover { border-color: var(--border-active); }
 .streak-badge { background: rgba(249, 115, 22, 0.1); border-color: rgba(249,115,22,0.2); }
+
+.header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.header-icon-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--border-active);
+  color: var(--accent-3);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+.header-icon-btn svg {
+  transition: transform 0.2s ease;
+}
+.header-icon-btn:hover svg {
+  transform: scale(1.08);
+}
 
 /* ============================
    PAGES

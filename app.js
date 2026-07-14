@@ -402,11 +402,13 @@ document.addEventListener('keydown', (e) => {
   else if (e.ctrlKey && key === 'v') { key = 'Ctrl+v'; e.preventDefault(); }
   else if (e.ctrlKey && key === 'a') { key = 'Ctrl+a'; e.preventDefault(); }
   else if (e.ctrlKey && key === 'x') { key = 'Ctrl+x'; e.preventDefault(); }
+  else if (e.ctrlKey && key === 'c') { key = 'Escape'; e.preventDefault(); } // Map Ctrl+C to Escape
+  else if (e.ctrlKey && key === 'w') { key = 'Ctrl+w'; e.preventDefault(); } // Allow Ctrl+W
   else if (e.ctrlKey && key === '[') { key = 'Escape'; e.preventDefault(); }
   else if (key === 'Tab') { e.preventDefault(); key = 'Tab'; }
   else if (key === 'Backspace' || key === 'Enter' || key === 'Escape' || key === 'Delete') { e.preventDefault(); }
   else if (e.ctrlKey) { e.preventDefault(); return; } // ignore other ctrl combos
-  else if (key.length > 1 && key !== 'Backspace' && key !== 'Enter' && key !== 'Escape' && key !== 'Delete' && !key.startsWith('Arrow')) {
+  else if (key.length > 1 && key !== 'Backspace' && key !== 'Enter' && key !== 'Escape' && key !== 'Delete' && key !== 'Ctrl+w' && !key.startsWith('Arrow')) {
     return; // ignore F-keys etc.
   }
 
@@ -654,6 +656,15 @@ window.addEventListener('DOMContentLoaded', () => {
   updateXPDisplay();
   animateHeroTerminal();
 
+  // Load saved theme
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    updateThemeIcons(true);
+  } else {
+    updateThemeIcons(false);
+  }
+
   // Set up vim body click focus
   document.addEventListener('click', (e) => {
     const vimBody = document.getElementById('vim-body');
@@ -672,6 +683,27 @@ function toggleSidebar() {
   const isCollapsed = sidebar.classList.toggle('collapsed');
   if (expandBtn) {
     expandBtn.style.display = isCollapsed ? 'flex' : 'none';
+  }
+}
+
+// ── Theme Switcher ──
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-theme');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  updateThemeIcons(isLight);
+}
+
+function updateThemeIcons(isLight) {
+  const sunIcon = document.getElementById('theme-sun-icon');
+  const moonIcon = document.getElementById('theme-moon-icon');
+  if (sunIcon && moonIcon) {
+    if (isLight) {
+      sunIcon.style.display = 'none';
+      moonIcon.style.display = 'block';
+    } else {
+      sunIcon.style.display = 'block';
+      moonIcon.style.display = 'none';
+    }
   }
 }
 
