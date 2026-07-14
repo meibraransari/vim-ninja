@@ -59,7 +59,7 @@ vim-ninja/
 - Buffers (:bn, :bp, :ls)
 - Indentation (>>, <<, gg=G)
 
-**🥷 Advanced (5+ lessons)**
+**🎓 Advanced (5+ lessons)**
 - Operators & Motions grammar
 - Vim Configuration (.vimrc)
 - Multi-line Editing (Ctrl+v block)
@@ -152,7 +152,6 @@ vim-ninja/
 - `basic_vim.md` — CKA-focused shortcuts
 - `vim_theme` — vimrc configuration options
 - `vimrc/` — Real vimrc examples
-- [vim-hero.com](https://vim-hero.com) — Lesson style inspiration
 
 ---
 
@@ -165,4 +164,15 @@ vim-ninja/
 
 ---
 
-*Made with ⚡ by VimNinja — Learn Vim the fun way!*
+## 💼 Connect with Me 👇😊
+
+*   🔥 [**YouTube**](https://www.youtube.com/@DevOpsinAction?sub_confirmation=1)
+*   ✍️ [**Blog**](https://ibraransari.blogspot.com/)
+*   💼 [**LinkedIn**](https://www.linkedin.com/in/ansariibrar/)
+*   👨‍💻 [**GitHub**](https://github.com/meibraransari?tab=repositories)
+*   💬 [**Telegram**](https://t.me/DevOpsinActionTelegram)
+*   🐳 [**Docker Hub**](https://hub.docker.com/u/ibraransaridocker)
+
+### ⭐ If You Found This Helpful...
+
+***Please star the repo and share it! Thanks a lot!*** 🌟
