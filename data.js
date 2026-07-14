@@ -1551,7 +1551,7 @@ const ACHIEVEMENTS = [
   { id: 'ten_lessons', name: 'Making Progress', desc: 'Complete 10 lessons', icon: '📚', condition: (p) => p.completedLessons.length >= 10 },
   { id: 'all_beginner', name: 'Vim Beginner', desc: 'Complete all beginner lessons', icon: '🎓', condition: (p) => LESSONS.filter(l => l.level === 'beginner').every(l => p.completedLessons.includes(l.id)) },
   { id: 'all_intermediate', name: 'Vim Intermediate', desc: 'Complete all intermediate lessons', icon: '⚡', condition: (p) => LESSONS.filter(l => l.level === 'intermediate').every(l => p.completedLessons.includes(l.id)) },
-  { id: 'all_advanced', name: 'Vim Master', desc: 'Complete all advanced lessons', icon: '🥷', condition: (p) => LESSONS.filter(l => l.level === 'advanced').every(l => p.completedLessons.includes(l.id)) },
+  { id: 'all_advanced', name: 'Vim Master', desc: 'Complete all advanced lessons', icon: '⚔️', condition: (p) => LESSONS.filter(l => l.level === 'advanced').every(l => p.completedLessons.includes(l.id)) },
   { id: 'all_lessons', name: 'Vim Ninja', desc: 'Complete ALL lessons', icon: '🏆', condition: (p) => p.completedLessons.length >= LESSONS.length },
   { id: 'hundred_xp', name: 'Century', desc: 'Earn 100 XP', icon: '💯', condition: (p) => p.xp >= 100 },
   { id: 'five_hundred_xp', name: 'Power User', desc: 'Earn 500 XP', icon: '⚡', condition: (p) => p.xp >= 500 },

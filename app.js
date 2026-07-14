@@ -65,7 +65,7 @@ function renderHomePath() {
   const levels = [
     { id: 'beginner', label: 'Beginner', icon: '🌱', desc: 'Learn the basics: modes, movement, editing' },
     { id: 'intermediate', label: 'Intermediate', icon: '⚡', desc: 'Text objects, marks, macros, buffers' },
-    { id: 'advanced', label: 'Advanced', icon: '🥷', desc: 'Ex commands, regex, Neovim, Lua' },
+    { id: 'advanced', label: 'Advanced', icon: '⚔️', desc: 'Ex commands, regex, Neovim, Lua' },
   ];
   grid.innerHTML = levels.map(lv => {
     const lessons = LESSONS.filter(l => l.level === lv.id);
