@@ -85,50 +85,6 @@ vim-ninja/
 
 ---
 
-## ⌨️ Supported Vim Commands
-
-### Movement
-`h j k l` · `w W e E b B` · `0 ^ $ g_` · `gg G` · `{n}G` · `H M L`
-`f F t T ; ,` · `% { }` · `Ctrl+d u f b`
-
-### Insert Mode Entry
-`i I a A o O` · `s S cc` · `R` (replace mode)
-
-### Operators
-`d c y > < = ~ g~ gU gu`
-
-### Text Objects
-`iw aw iW aW is as ip ap i( a( i[ a[ i{ a{ i" a" i' a' i\` a\`` 
-
-### Visual Modes
-`v V Ctrl+v` · `o O` (switch ends) · `gv` (reselect)
-
-### Delete/Change/Yank
-`dd dw de db d$ d0 dG` · `cc cw ciw` · `yy yw y$` · `p P`
-
-### Registers & Marks
-`:reg` · `"xy "xp "Xy` · `ma \`a 'a :marks` · `\`\`` · `\`[ \`]`
-
-### Macros
-`qa q @a @@ 10@a`
-
-### Search
-`/pattern ?pattern n N * # :noh` · `\<word\>` · `\c \C`
-
-### Substitute
-`:%s/old/new/g` · `:%s/old/new/gc` · `:g/pat/d`
-
-### Files & Buffers
-`:w :q :wq :q! ZZ ZQ` · `:e :bn :bp :bd :ls`
-
-### Windows & Tabs  
-`:sp :vsp` · `Ctrl+w h/j/k/l/w/s/v/q/=`
-
-### Misc
-`u Ctrl+r . J gJ r ~ Ctrl+a Ctrl+x`
-
----
-
 ## 🏆 Achievements
 
 | Achievement | Requirement |
