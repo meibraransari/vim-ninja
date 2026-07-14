@@ -4,7 +4,7 @@
 # Matches vim_project spec: vim, neovim, git, tmux, ripgrep, curl
 # ============================================================
 
-FROM ubuntu:24.04 AS base
+FROM ubuntu:22.04 AS base
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,8 +14,10 @@ ENV HOME=/home/ninja
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# ── System packages ────────────────────────────────────────
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# ── System packages (with DNS & IPv4 fallback config) ─────
+RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 \
+    && echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99retries \
+    && apt-get update && apt-get install -y --no-install-recommends \
     # Core tools from vim_project spec
     vim \
     neovim \
