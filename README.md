@@ -1,6 +1,22 @@
-# ⚡ VimNinja — Interactive Vim Learning Platform
+<div align="center">
+  <img src="assets/logo.png" alt="VimNinja Logo" width="100" />
 
-> Master the world's most powerful text editor through interactive lessons, real practice, and progressive challenges.
+  <h1>VimNinja</h1>
+
+  <p><strong>Self-hosted Vim Lab for Hands-on Learning</strong></p>
+
+</div>
+
+VimNinja runs a real Vim inside two Docker container and provide it with a browser-based terminal to achieve lessons, real practice, and progressive challenges.
+
+
+## Screenshots
+
+| | | |
+|---|---|---|
+| ![Home Page](assets/1.png) | ![Home Page 2](assets/2.png) | ![Lessions](assets/3.png) |
+| ![Cheatsheets](assets/4.png) | ![Progress](assets/5.png) | ![Achievements](assets/6.png) |
+
 
 ---
 
@@ -9,11 +25,10 @@
 ### 🌐 Option A: Run directly in the Browser (No setup)
 Just open `index.html` in your browser:
 ```bash
-# Windows
+# Clone Repo
+git clone https://github.com/meibraransari/vim-ninja.git
+cd vim-ninja
 start index.html
-
-# Mac/Linux
-open index.html
 ```
 
 ---
@@ -21,25 +36,20 @@ open index.html
 ### 🐳 Option B: Run via Docker (Nginx server + Real Terminal Vim Sandbox)
 We provide a containerized setup to run the browser platform via Nginx and spin up an isolated interactive playground containing classic `Vim`, `Neovim`, `tmux`, and `ripgrep` for practicing on real files.
 
-#### 1. Setup Environment
-Copy the example environment file:
+
 ```bash
+# 1. Setup Environment
 cp .env.example .env
-```
 
-#### 2. Start Services
-Build and launch the containers:
-```bash
+# 2. Start Services
 docker compose up -d
-```
-* The web application will be accessible at: **`http://localhost:8080`**
-* Standard Nginx logs and your sandbox home directory (`/home/ninja`) are persisted in named volumes.
 
-#### 3. Access the Real Vim Sandbox
-To open a shell and practice using real Vim/Neovim inside the container:
-```bash
+# 3. Access the Real Vim Sandbox | To open a shell and practice using real Vim/Neovim inside the container:
 docker exec -it vimninja-sandbox bash
 ```
+
+* The web application will be accessible at: **`http://localhost:8080`**
+* Standard Nginx logs and your sandbox home directory (`/home/ninja`) are persisted in named volumes.
 
 ---
 
@@ -72,46 +82,6 @@ vim-ninja/
 ├── vim-engine.js   — Browser Vim emulator (full mode system)
 └── app.js          — App controller & page routing
 ```
-
----
-
-## 🎓 What's Included
-
-### 20 Lessons across 3 levels:
-
-**🌱 Beginner (10 lessons)**
-- Introduction to Vim Modes
-- Basic Movement (hjkl)
-- Moving by Words (w, e, b)
-- Insert Mode Commands (i, a, I, A, o, O)
-- Delete, Cut & Change (dd, dw, D, cc, cw)
-- Copy (Yank) & Paste (yy, p, P)
-- Undo & Redo (u, Ctrl+r)
-- Search & Navigation (/, ?, n, N)
-- Visual Mode (v, V, Ctrl+v)
-- Search & Replace (:%s/old/new/g)
-
-**⚡ Intermediate (10 lessons)**
-- Line Navigation (0, ^, $, g_)
-- File Navigation (gg, G, Ctrl+f/b)
-- Find Character (f, t, F, T, ;, ,)
-- Text Objects (iw, aw, i{, a", etc.)
-- Marks (ma, `a)
-- Macros (qa, @a, @@)
-- Registers ("a, :reg, "+)
-- Windows & Tabs (:sp, :vsp, Ctrl+w)
-- Buffers (:bn, :bp, :ls)
-- Indentation (>>, <<, gg=G)
-
-**🎓 Advanced (5+ lessons)**
-- Operators & Motions grammar
-- Vim Configuration (.vimrc)
-- Multi-line Editing (Ctrl+v block)
-- Ex Commands (:g, :r, :!)
-- Advanced Search & Regex (\v, \w)
-- Jumps & Change History (Ctrl+o/i)
-- Folding (zo, zc, za, zM)
-- Neovim & Lua
 
 ---
 
