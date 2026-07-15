@@ -36,7 +36,18 @@ start index.html
 ### 🐳 Option B: Run via Docker (Nginx server + Real Terminal Vim Sandbox)
 We provide a containerized setup to run the browser platform via Nginx and spin up an isolated interactive playground containing classic `Vim`, `Neovim`, `tmux`, and `ripgrep` for practicing on real files.
 
+#### Using Docker Run Command.
+```bash
+docker run -d \
+  --name vimninja-frontend \
+  --restart unless-stopped \
+  -p 8080:80 \
+  -v vimninja-nginx-logs:/var/log/nginx \
+  ibraransaridocker/vimninja-frontend:latest
 
+```
+
+#### Using Docker Compose.
 ```bash
 # 1. Setup Environment
 cp .env.example .env
