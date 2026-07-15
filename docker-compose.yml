@@ -55,7 +55,7 @@ services:
       target: production
       args:
         BUILDKIT_INLINE_CACHE: "1"
-    image: vimninja/frontend:latest
+    image: ibraransaridocker/vimninja-frontend:latest
     container_name: vimninja-frontend
     <<: *default-restart
     ports:
@@ -86,7 +86,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.sandbox
-    image: vimninja/sandbox:latest
+    image: ibraransaridocker/vimninja-sandbox:latest
     container_name: vimninja-sandbox
     <<: *default-restart
     networks:
