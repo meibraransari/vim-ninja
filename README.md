@@ -44,12 +44,13 @@ cp .env.example .env
 # 2. Start Services
 docker compose up -d
 
-# 3. Access the Real Vim Sandbox | To open a shell and practice using real Vim/Neovim inside the container:
+# 3. Access the Real Vim Sandbox.
+# To open a shell and practice using real Vim/Neovim inside the container:
 docker exec -it vimninja-sandbox bash
 ```
 
-* The web application will be accessible at: **`http://localhost:8080`**
-* Standard Nginx logs and your sandbox home directory (`/home/ninja`) are persisted in named volumes.
+> The web application will be accessible at: **`http://localhost:8080`**
+
 
 ---
 
