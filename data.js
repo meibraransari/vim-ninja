@@ -214,7 +214,7 @@ const LESSONS = [
       initialText: 'Original line one\nOriginal line two\nOriginal line three\n\n\n',
       instruction: 'Move to line 1, press <kbd>yy</kbd> to yank it, then move down and press <kbd>p</kbd> to paste it below.',
       hint: 'yy copies the current line. p pastes it below.',
-      validate: (state) => state.lines.length > 4 || (state.text.match(/Original line one/g) || []).length >= 2,
+      validate: (state) => (state.text.match(/Original line one/g) || []).length >= 2,
     },
   },
   {
@@ -645,7 +645,7 @@ const LESSONS = [
       initialText: 'Learn window management!\n:sp to split horizontally\n:vsp to split vertically\nCtrl+w w to switch windows',
       instruction: 'This lesson is conceptual — read the commands above and use :sp to split the window.',
       hint: 'Type :sp and press Enter to split horizontally.',
-      validate: (state) => true,
+      validate: (state) => state.windowSplitUsed === true,
     },
   },
   {
@@ -679,7 +679,7 @@ const LESSONS = [
       initialText: 'Buffer management is key to Vim mastery.\n:ls shows all open buffers.\n:bn and :bp navigate between them.',
       instruction: 'Type <kbd>:ls</kbd> to list buffers, then type <kbd>:bn</kbd> to go to next buffer.',
       hint: ':ls lists buffers. :bn goes to next buffer.',
-      validate: (state) => true,
+      validate: (state) => state.bufferNavUsed === true,
     },
   },
   {
@@ -982,7 +982,7 @@ const LESSONS = [
       initialText: 'function alpha() {\n  const x = 1;\n  return x;\n}\n\nfunction beta() {\n  const y = 2;\n  return y;\n}',
       instruction: 'This lesson is conceptual. Practice folding commands: <kbd>zc</kbd> to close fold, <kbd>zo</kbd> to open, <kbd>za</kbd> to toggle.',
       hint: 'za toggles the fold under your cursor.',
-      validate: (state) => true,
+      validate: (state) => state.foldUsed === true,
     },
   },
   {

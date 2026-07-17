@@ -41,6 +41,9 @@ class VimEngine {
       textObjUsed: false,
       operatorUsed: false,
       indentUsed: false,
+      windowSplitUsed: false,
+      bufferNavUsed: false,
+      foldUsed: false,
     };
     // Macro recording
     this.macroRecording = null;
@@ -51,6 +54,11 @@ class VimEngine {
     this.jumpIndex = -1;
     // Replace mode
     this.replacedChars = [];
+    this.pendingCount = 0;      // count saved when operator key (d/c/y) is typed: e.g. '5' then 'd' saves 5
+    this.activeRegister = '"';  // active register for \"ayy / \"ap style commands
+    this.lastVisualStart = null;
+    this.lastVisualEnd = null;
+    this.lastVisualMode = null;
   }
 
   setText(text) {
@@ -65,6 +73,7 @@ class VimEngine {
       marksUsed: false, macroUsed: false, registerUsed: false,
       lineNavUsed: false, usedGG: false, jumpUsed: false,
       textObjUsed: false, operatorUsed: false, indentUsed: false,
+      windowSplitUsed: false, bufferNavUsed: false, foldUsed: false,
     };
     this.register = {};
     this.marks = {};
@@ -76,6 +85,11 @@ class VimEngine {
     this.cmdLineInput = '';
     this.searchPattern = '';
     this.searchMatches = [];
+    this.pendingCount = 0;
+    this.activeRegister = '"';
+    this.lastVisualStart = null;
+    this.lastVisualEnd = null;
+    this.lastVisualMode = null;
     this.update();
   }
 
@@ -137,8 +151,13 @@ class VimEngine {
 
   setMode(mode) {
     const prev = this.mode;
-    this.mode = mode;
     if (prev !== mode) {
+      if (prev.startsWith('visual') && mode === 'normal') {
+        this.lastVisualStart = this.visualStart ? { ...this.visualStart } : { ...this.cursor };
+        this.lastVisualEnd = this.visualEnd ? { ...this.visualEnd } : { ...this.cursor };
+        this.lastVisualMode = prev;
+      }
+      this.mode = mode;
       this.stats.modeChanges++;
       this.onModeChange(mode);
     }
@@ -259,34 +278,47 @@ class VimEngine {
   }
 
   searchWordUnderCursor(forward = true) {
+    const word = this.wordUnderCursor();
+    if (word) this.search(word, forward);
+  }
+
+  wordUnderCursor() {
     const line = this.currentLine();
+    if (line.length === 0) return '';
     let start = this.cursor.col;
     while (start > 0 && /\w/.test(line[start - 1])) start--;
     let end = this.cursor.col;
+    // ensure we include the character under cursor
     while (end < line.length && /\w/.test(line[end])) end++;
-    const word = line.slice(start, end);
-    if (word) this.search(word, forward);
+    return line.slice(start, end);
   }
 
   // ── Yank/Delete/Change helpers ──
   yankRange(startRow, startCol, endRow, endCol, linewise = false) {
+    const regName = this.activeRegister || '"';
     if (linewise) {
       const yanked = this.lines.slice(startRow, endRow + 1).join('\n');
+      this.register[regName] = { text: yanked, linewise: true };
       this.register['"'] = { text: yanked, linewise: true };
       this.register['0'] = { text: yanked, linewise: true };
     } else {
       if (startRow === endRow) {
         const text = this.lines[startRow].slice(startCol, endCol + 1);
+        this.register[regName] = { text, linewise: false };
         this.register['"'] = { text, linewise: false };
         this.register['0'] = { text, linewise: false };
       } else {
         let text = this.lines[startRow].slice(startCol);
         for (let r = startRow + 1; r < endRow; r++) text += '\n' + this.lines[r];
         text += '\n' + this.lines[endRow].slice(0, endCol + 1);
+        this.register[regName] = { text, linewise: false };
         this.register['"'] = { text, linewise: false };
         this.register['0'] = { text, linewise: false };
       }
     }
+    // Track register stat and reset
+    if (regName !== '"') this.stats.registerUsed = true;
+    this.activeRegister = '"';
   }
 
   deleteRange(startRow, startCol, endRow, endCol, linewise = false) {
@@ -313,7 +345,10 @@ class VimEngine {
   }
 
   paste(before = false) {
-    const reg = this.register['"'];
+    const regName = this.activeRegister || '"';
+    const reg = this.register[regName] || this.register['"'];
+    if (regName !== '"') this.stats.registerUsed = true;
+    this.activeRegister = '"'; // reset after use
     if (!reg) return;
     this.saveUndo();
     if (reg.linewise) {
@@ -409,55 +444,312 @@ class VimEngine {
   // ── Text object range ──
   innerWord() {
     const line = this.currentLine();
+    if (line.length === 0) {
+      return { startRow: this.cursor.row, startCol: 0, endRow: this.cursor.row, endCol: 0 };
+    }
     let start = this.cursor.col;
     let end = this.cursor.col;
-    while (start > 0 && /\w/.test(line[start - 1])) start--;
-    while (end < line.length - 1 && /\w/.test(line[end + 1])) end++;
+    
+    const char = line[this.cursor.col] || '';
+    const isWordChar = (c) => /\w/.test(c);
+    const isSpaceChar = (c) => /\s/.test(c);
+    const isPunctChar = (c) => !isWordChar(c) && !isSpaceChar(c);
+    
+    const matcher = isWordChar(char) ? isWordChar : (isPunctChar(char) ? isPunctChar : isSpaceChar);
+    
+    while (start > 0 && matcher(line[start - 1])) start--;
+    while (end < line.length - 1 && matcher(line[end + 1])) end++;
     return { startRow: this.cursor.row, startCol: start, endRow: this.cursor.row, endCol: end };
   }
 
-  innerPair(open, close) {
-    const text = this.getText();
-    const pos = this.cursor.row * 1000 + this.cursor.col; // approx
-    // Find in current line first
+  aroundWord() {
     const line = this.currentLine();
-    let openIdx = -1, depth = 0;
+    if (line.length === 0) {
+      return { startRow: this.cursor.row, startCol: 0, endRow: this.cursor.row, endCol: 0 };
+    }
+    const rng = this.innerWord();
+    let start = rng.startCol;
+    let end = rng.endCol;
+    
+    // Expand to include trailing spaces
+    let trailingStart = end + 1;
+    while (trailingStart < line.length && /\s/.test(line[trailingStart])) trailingStart++;
+    if (trailingStart > end + 1) {
+      return { startRow: this.cursor.row, startCol: start, endRow: this.cursor.row, endCol: trailingStart - 1 };
+    }
+    
+    // If no trailing spaces, include leading spaces
+    let leadingEnd = start - 1;
+    while (leadingEnd >= 0 && /\s/.test(line[leadingEnd])) leadingEnd--;
+    if (leadingEnd < start - 1) {
+      return { startRow: this.cursor.row, startCol: leadingEnd + 1, endRow: this.cursor.row, endCol: end };
+    }
+    
+    return rng;
+  }
+
+  innerPair(open, close) {
+    const line = this.currentLine();
+    let openIdx = -1;
+    let closeIdx = -1;
+    
+    // Find the matching pair containing the cursor
+    // Search backward for open bracket
+    let depth = 0;
     for (let i = this.cursor.col; i >= 0; i--) {
-      if (line[i] === close) depth++;
-      else if (line[i] === open) {
-        if (depth === 0) { openIdx = i; break; }
+      if (line[i] === close) {
+        depth++;
+      } else if (line[i] === open) {
+        if (depth === 0) {
+          openIdx = i;
+          break;
+        }
         depth--;
       }
     }
+    
+    if (openIdx === -1) {
+      // Try searching forward for the first open bracket after cursor
+      for (let i = this.cursor.col; i < line.length; i++) {
+        if (line[i] === open) {
+          openIdx = i;
+          break;
+        }
+      }
+    }
+    
     if (openIdx === -1) return null;
-    let closeIdx = -1;
+    
+    // Search forward from openIdx for matching close bracket
     depth = 0;
     for (let i = openIdx + 1; i < line.length; i++) {
-      if (line[i] === open) depth++;
-      else if (line[i] === close) {
-        if (depth === 0) { closeIdx = i; break; }
+      if (line[i] === open) {
+        depth++;
+      } else if (line[i] === close) {
+        if (depth === 0) {
+          closeIdx = i;
+          break;
+        }
         depth--;
       }
     }
+    
     if (closeIdx === -1) return null;
     return { startRow: this.cursor.row, startCol: openIdx + 1, endRow: this.cursor.row, endCol: closeIdx - 1 };
   }
 
   innerQuote(q) {
     const line = this.currentLine();
-    let first = -1, second = -1;
+    let idxs = [];
     for (let i = 0; i < line.length; i++) {
       if (line[i] === q) {
-        if (first === -1) first = i;
-        else { second = i; break; }
+        if (i === 0 || line[i - 1] !== '\\') {
+          idxs.push(i);
+        }
       }
     }
-    if (first === -1 || second === -1) return null;
-    if (this.cursor.col > first && this.cursor.col < second) {
-      return { startRow: this.cursor.row, startCol: first + 1, endRow: this.cursor.row, endCol: second - 1 };
+    if (idxs.length < 2) return null;
+    
+    let startIdx = -1;
+    let endIdx = -1;
+    
+    // Find pair containing the cursor
+    for (let i = 0; i < idxs.length - 1; i += 2) {
+      const s = idxs[i];
+      const e = idxs[i + 1];
+      if (this.cursor.col >= s && this.cursor.col <= e) {
+        startIdx = s;
+        endIdx = e;
+        break;
+      }
     }
-    return null;
+    
+    // If not inside, pick first pair after cursor
+    if (startIdx === -1) {
+      for (let i = 0; i < idxs.length - 1; i += 2) {
+        const s = idxs[i];
+        const e = idxs[i + 1];
+        if (s > this.cursor.col) {
+          startIdx = s;
+          endIdx = e;
+          break;
+        }
+      }
+    }
+    
+    // Fallback to last pair
+    if (startIdx === -1) {
+      startIdx = idxs[idxs.length - 2];
+      endIdx = idxs[idxs.length - 1];
+    }
+    
+    return { startRow: this.cursor.row, startCol: startIdx + 1, endRow: this.cursor.row, endCol: endIdx - 1 };
   }
+
+  innerParagraph() {
+    let startRow = this.cursor.row;
+    while (startRow > 0 && this.lines[startRow - 1].trim() !== '') startRow--;
+    let endRow = this.cursor.row;
+    while (endRow < this.lines.length - 1 && this.lines[endRow + 1].trim() !== '') endRow++;
+    return { startRow, startCol: 0, endRow, endCol: (this.lines[endRow] || '').length - 1, linewise: true };
+  }
+
+  aroundParagraph() {
+    let rng = this.innerParagraph();
+    let startRow = rng.startRow;
+    let endRow = rng.endRow;
+    if (endRow < this.lines.length - 1 && this.lines[endRow + 1].trim() === '') {
+      endRow++;
+    } else if (startRow > 0 && this.lines[startRow - 1].trim() === '') {
+      startRow--;
+    }
+    return { startRow, startCol: 0, endRow, endCol: (this.lines[endRow] || '').length - 1, linewise: true };
+  }
+
+  getTextObjectRange(objType, isAround) {
+    if (objType === 'w') {
+      return isAround ? this.aroundWord() : this.innerWord();
+    }
+    if (objType === 'W') {
+      const line = this.currentLine();
+      if (line.length === 0) {
+        return { startRow: this.cursor.row, startCol: 0, endRow: this.cursor.row, endCol: 0 };
+      }
+      let start = this.cursor.col;
+      let end = this.cursor.col;
+      while (start > 0 && !/\s/.test(line[start - 1])) start--;
+      while (end < line.length - 1 && !/\s/.test(line[end + 1])) end++;
+      if (isAround) {
+        while (end < line.length - 1 && /\s/.test(line[end + 1])) end++;
+        if (end === this.cursor.col) {
+          while (start > 0 && /\s/.test(line[start - 1])) start--;
+        }
+      }
+      return { startRow: this.cursor.row, startCol: start, endRow: this.cursor.row, endCol: end };
+    }
+    if (objType === '(' || objType === ')' || objType === 'b') {
+      const r = this.innerPair('(', ')');
+      if (!r) return null;
+      if (isAround) { r.startCol--; r.endCol++; }
+      return r;
+    }
+    if (objType === '{' || objType === '}' || objType === 'B') {
+      const r = this.innerPair('{', '}');
+      if (!r) return null;
+      if (isAround) { r.startCol--; r.endCol++; }
+      return r;
+    }
+    if (objType === '[' || objType === ']') {
+      const r = this.innerPair('[', ']');
+      if (!r) return null;
+      if (isAround) { r.startCol--; r.endCol++; }
+      return r;
+    }
+    if (objType === '"') {
+      const r = this.innerQuote('"');
+      if (!r) return null;
+      if (isAround) { r.startCol--; r.endCol++; }
+      return r;
+    }
+    if (objType === "'") {
+      const r = this.innerQuote("'");
+      if (!r) return null;
+      if (isAround) { r.startCol--; r.endCol++; }
+      return r;
+    }
+    if (objType === '`') {
+      const r = this.innerQuote('`');
+      if (!r) return null;
+      if (isAround) { r.startCol--; r.endCol++; }
+      return r;
+    }
+    if (objType === 'p') {
+      return isAround ? this.aroundParagraph() : this.innerParagraph();
+    }
+    return this.innerWord();
+  }
+
+  getMotionRange(motionKey, count = 1) {
+    const startRow = this.cursor.row;
+    const startCol = this.cursor.col;
+    const savedCursor = { ...this.cursor };
+
+    for (let i = 0; i < count; i++) {
+      this.handleNormalMovement(motionKey);
+    }
+
+    const endRow = this.cursor.row;
+    const endCol = this.cursor.col;
+    this.cursor = savedCursor;
+
+    let linewise = false;
+    if (['G', 'gg', 'j', 'k', 'ArrowUp', 'ArrowDown'].includes(motionKey)) {
+      linewise = true;
+    }
+
+    if (startRow < endRow || (startRow === endRow && startCol <= endCol)) {
+      return { startRow, startCol, endRow, endCol, linewise };
+    } else {
+      return { startRow: endRow, startCol: endCol, endRow: startRow, endCol: startCol, linewise };
+    }
+  }
+
+  executeOperator(op, range) {
+    if (!range) return;
+    const { startRow, startCol, endRow, endCol, linewise } = range;
+
+    if (op === 'd') {
+      this.deleteRange(startRow, startCol, endRow, endCol, linewise);
+      this.stats.operatorUsed = true;
+    } else if (op === 'c') {
+      this.deleteRange(startRow, startCol, endRow, endCol, linewise);
+      this.setMode('insert');
+      this.stats.operatorUsed = true;
+    } else if (op === 'y') {
+      this.yankRange(startRow, startCol, endRow, endCol, linewise);
+      this.stats.operatorUsed = true;
+    } else if (op === 'gU') {
+      this.saveUndo();
+      for (let r = startRow; r <= endRow; r++) {
+        const line = this.lines[r] || '';
+        const sc = (r === startRow) ? startCol : 0;
+        const ec = (r === endRow) ? endCol : line.length - 1;
+        const before = line.slice(0, sc);
+        const mid = line.slice(sc, ec + 1).toUpperCase();
+        const after = line.slice(ec + 1);
+        this.lines[r] = before + mid + after;
+      }
+      this.stats.operatorUsed = true;
+    } else if (op === 'gu') {
+      this.saveUndo();
+      for (let r = startRow; r <= endRow; r++) {
+        const line = this.lines[r] || '';
+        const sc = (r === startRow) ? startCol : 0;
+        const ec = (r === endRow) ? endCol : line.length - 1;
+        const before = line.slice(0, sc);
+        const mid = line.slice(sc, ec + 1).toLowerCase();
+        const after = line.slice(ec + 1);
+        this.lines[r] = before + mid + after;
+      }
+      this.stats.operatorUsed = true;
+    } else if (op === 'g~') {
+      this.saveUndo();
+      for (let r = startRow; r <= endRow; r++) {
+        const line = this.lines[r] || '';
+        const sc = (r === startRow) ? startCol : 0;
+        const ec = (r === endRow) ? endCol : line.length - 1;
+        const before = line.slice(0, sc);
+        const mid = line.slice(sc, ec + 1).split('').map(c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()).join('');
+        const after = line.slice(ec + 1);
+        this.lines[r] = before + mid + after;
+      }
+      this.stats.operatorUsed = true;
+    }
+
+    this.clampCursor();
+    this.update();
+  }
+
 
   // ── Substitution ──
   substitute(cmd) {
@@ -539,14 +831,19 @@ class VimEngine {
       this.setStatus(Object.entries(this.marks).map(([k,v]) => `${k}: ${v.row+1},${v.col+1}`).join('  ') || 'No marks');
     } else if (cmd === 'sp' || cmd.startsWith('split')) {
       this.setStatus('Split horizontally (simulated)');
+      this.stats.windowSplitUsed = true;
     } else if (cmd === 'vsp' || cmd.startsWith('vsplit')) {
       this.setStatus('Split vertically (simulated)');
+      this.stats.windowSplitUsed = true;
     } else if (cmd === 'bn' || cmd === 'bnext') {
       this.setStatus('Buffer next (simulated)');
+      this.stats.bufferNavUsed = true;
     } else if (cmd === 'bp' || cmd === 'bprev') {
       this.setStatus('Buffer previous (simulated)');
+      this.stats.bufferNavUsed = true;
     } else if (cmd === 'bd' || cmd === 'bdelete') {
       this.setStatus('Buffer deleted (simulated)');
+      this.stats.bufferNavUsed = true;
     } else if (cmd === 'tabnew') {
       this.setStatus('New tab opened (simulated)');
     } else if (cmd === 'tabn' || cmd === 'tabnext') {
@@ -561,6 +858,7 @@ class VimEngine {
       this.setStatus(`(${cmd} applied — simulated)`);
     } else if (cmd === 'ls' || cmd === 'files' || cmd === 'buffers') {
       this.setStatus('1 %a "[current file]" line 1');
+      this.stats.bufferNavUsed = true;
     } else {
       this.setStatus(`(Command: :${cmd})`);
     }
@@ -723,7 +1021,25 @@ class VimEngine {
   }
 
   handleVisual(key) {
-    const movKeys = ['h', 'j', 'k', 'l', 'w', 'e', 'b', 'W', 'E', 'B', '0', '^', '$', 'G', 'gg'];
+    if (this.cmdBuffer === 'i' || this.cmdBuffer === 'a') {
+      const isAround = this.cmdBuffer === 'a';
+      const range = this.getTextObjectRange(key, isAround);
+      if (range) {
+        this.visualStart = { row: range.startRow, col: range.startCol };
+        this.cursor = { row: range.endRow, col: range.endCol };
+        this.visualEnd = { ...this.cursor };
+        this.stats.textObjUsed = true;
+      }
+      this.cmdBuffer = '';
+      this.update();
+      return;
+    }
+
+    if (key === 'i' || key === 'a') {
+      this.cmdBuffer = key;
+      return;
+    }
+
     // Movement first
     this.handleNormalMovement(key);
     this.visualEnd = { ...this.cursor };
@@ -852,22 +1168,66 @@ class VimEngine {
       const pos = this.wordBackwardStart();
       this.cursor.row = pos.row; this.cursor.col = pos.col;
       this.stats.wordJumps++;
-    } else if (key === 'W') {
-      // WORD forward
-      let col = this.cursor.col;
-      while (col < line.length && !/\s/.test(line[col])) col++;
-      while (col < line.length && /\s/.test(line[col])) col++;
-      this.cursor.col = Math.min(col, line.length - 1);
-    } else if (key === 'E') {
-      let col = this.cursor.col + 1;
-      while (col < line.length && /\s/.test(line[col])) col++;
-      while (col + 1 < line.length && !/\s/.test(line[col + 1])) col++;
-      this.cursor.col = Math.min(col, line.length - 1);
-    } else if (key === 'B') {
+    } else if (key === 'ge') {
+      let row = this.cursor.row;
       let col = this.cursor.col - 1;
-      while (col > 0 && /\s/.test(line[col])) col--;
-      while (col > 0 && !/\s/.test(line[col - 1])) col--;
-      this.cursor.col = Math.max(0, col);
+      if (col < 0 && row > 0) {
+        row--;
+        col = (this.lines[row] || '').length - 1;
+      }
+      let ln = this.lines[row] || '';
+      const isWordChar = (c) => /\w/.test(c);
+      while (col > 0 && isWordChar(ln[col])) col--;
+      while (col > 0 && !isWordChar(ln[col])) col--;
+      this.cursor.row = row; this.cursor.col = Math.max(0, col);
+    } else if (key === 'gE') {
+      let row = this.cursor.row;
+      let col = this.cursor.col - 1;
+      if (col < 0 && row > 0) {
+        row--;
+        col = (this.lines[row] || '').length - 1;
+      }
+      let ln = this.lines[row] || '';
+      while (col > 0 && !/\s/.test(ln[col])) col--;
+      while (col > 0 && /\s/.test(ln[col])) col--;
+      this.cursor.row = row; this.cursor.col = Math.max(0, col);
+    } else if (key === 'W') {
+      let row = this.cursor.row;
+      let col = this.cursor.col;
+      let ln = this.lines[row] || '';
+      while (col < ln.length && !/\s/.test(ln[col])) col++;
+      while (col < ln.length && /\s/.test(ln[col])) col++;
+      if (col >= ln.length && row < this.lines.length - 1) {
+        row++;
+        col = 0;
+        ln = this.lines[row] || '';
+        while (col < ln.length && /\s/.test(ln[col])) col++;
+      }
+      this.cursor.row = row; this.cursor.col = col;
+    } else if (key === 'E') {
+      let row = this.cursor.row;
+      let col = this.cursor.col + 1;
+      let ln = this.lines[row] || '';
+      if (col >= ln.length && row < this.lines.length - 1) {
+        row++;
+        ln = this.lines[row] || '';
+        col = 0;
+      }
+      while (col < ln.length && /\s/.test(ln[col])) col++;
+      while (col + 1 < ln.length && !/\s/.test(ln[col + 1])) col++;
+      this.cursor.row = row; this.cursor.col = Math.min(col, ln.length - 1);
+    } else if (key === 'B') {
+      let row = this.cursor.row;
+      let col = this.cursor.col - 1;
+      if (col < 0 && row > 0) {
+        row--;
+        const ln2 = this.lines[row] || '';
+        col = ln2.length - 1;
+      }
+      const ln = this.lines[row] || '';
+      while (col > 0 && /\s/.test(ln[col])) col--;
+      while (col > 0 && !/\s/.test(ln[col - 1])) col--;
+      this.cursor.row = row; this.cursor.col = Math.max(0, col);
     } else if (key === '0') {
       this.cursor.col = 0;
       this.stats.lineNavUsed = true;
@@ -967,7 +1327,10 @@ class VimEngine {
     const count = parseInt(this.countBuffer) || 1;
     this.countBuffer = '';
 
-    // Multi-key commands accumulation
+    // Multi-key commands accumulation and execution
+    const isOperator = (op) => ['d', 'c', 'y', '>', '<', '='].includes(op);
+    const isCaseChange = (op) => ['gU', 'gu', 'g~'].includes(op);
+
     if (this.cmdBuffer === 'Ctrl+w') {
       if (key === 'v') {
         this.setStatus('Split window vertically (simulated)');
@@ -982,6 +1345,32 @@ class VimEngine {
       } else {
         this.setStatus(`Window cmd: Ctrl+w ${key}`);
       }
+    }
+
+    if (this.cmdBuffer === '[') {
+      if (key === 'd') {
+        this.setStatus('LSP: Previous diagnostic (simulated)');
+      } else if (key === 'c') {
+        this.setStatus('Diff: Previous change (simulated)');
+      } else if (key === 's') {
+        this.setStatus('Spell: Previous misspelled word (simulated)');
+      } else if (key === '[') {
+        this.handleNormalMovement('gg');
+      }
+      this.cmdBuffer = '';
+      this.update(); return;
+    }
+
+    if (this.cmdBuffer === ']') {
+      if (key === 'd') {
+        this.setStatus('LSP: Next diagnostic (simulated)');
+      } else if (key === 'c') {
+        this.setStatus('Diff: Next change (simulated)');
+      } else if (key === 's') {
+        this.setStatus('Spell: Next misspelled word (simulated)');
+      } else if (key === ']') {
+        this.handleNormalMovement('G');
+      }
       this.cmdBuffer = '';
       this.update(); return;
     }
@@ -991,55 +1380,156 @@ class VimEngine {
         this.handleNormalMovement('gg');
         this.cmdBuffer = '';
         this.clampCursor(); this.update(); return;
-      } else if (key === 'U') {
-        // gU + motion
-        const rng = this.innerWord();
-        this.saveUndo();
-        this.lines[rng.startRow] = this.lines[rng.startRow].slice(0, rng.startCol) +
-          this.lines[rng.startRow].slice(rng.startCol, rng.endCol + 1).toUpperCase() +
-          this.lines[rng.startRow].slice(rng.endCol + 1);
-        this.stats.operatorUsed = true;
+      } else if (key === 'v') {
+        if (this.lastVisualMode) {
+          this.visualStart = { ...this.lastVisualStart };
+          this.visualEnd = { ...this.lastVisualEnd };
+          this.cursor = { ...this.lastVisualEnd };
+          this.setMode(this.lastVisualMode);
+          this.stats.visualUsed = true;
+        }
         this.cmdBuffer = '';
         this.update(); return;
-      } else if (key === 'u') {
-        const rng = this.innerWord();
-        this.saveUndo();
-        this.lines[rng.startRow] = this.lines[rng.startRow].slice(0, rng.startCol) +
-          this.lines[rng.startRow].slice(rng.startCol, rng.endCol + 1).toLowerCase() +
-          this.lines[rng.startRow].slice(rng.endCol + 1);
-        this.stats.operatorUsed = true;
-        this.cmdBuffer = ''; this.update(); return;
-      } else if (key === '~') {
-        const rng = this.innerWord();
-        this.saveUndo();
-        const w = this.lines[rng.startRow].slice(rng.startCol, rng.endCol + 1);
-        const toggled = w.split('').map(c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()).join('');
-        this.lines[rng.startRow] = this.lines[rng.startRow].slice(0, rng.startCol) + toggled + this.lines[rng.startRow].slice(rng.endCol + 1);
-        this.cmdBuffer = ''; this.update(); return;
       } else if (key === 'J') {
-        // Join without space
         this.saveUndo();
         if (this.cursor.row < this.lines.length - 1) {
-          this.lines[this.cursor.row] = this.lines[this.cursor.row] + this.lines[this.cursor.row + 1].trim();
+          this.lines[this.cursor.row] = this.lines[this.cursor.row] + this.lines[this.cursor.row + 1].trimStart();
           this.lines.splice(this.cursor.row + 1, 1);
         }
         this.cmdBuffer = ''; this.update(); return;
+      } else if (key === 'e') {
+        this.handleNormalMovement('ge');
+        this.cmdBuffer = '';
+        this.clampCursor(); this.update(); return;
+      } else if (key === 'E') {
+        this.handleNormalMovement('gE');
+        this.cmdBuffer = '';
+        this.clampCursor(); this.update(); return;
+      } else if (key === 'd') {
+        const word = this.wordUnderCursor();
+        if (word && word.trim() !== '') {
+          for (let r = 0; r < this.lines.length; r++) {
+            const idx = this.lines[r].indexOf(word);
+            if (idx !== -1) {
+              this.addJump();
+              this.cursor.row = r;
+              this.cursor.col = idx;
+              this.setStatus(`gd: Go to definition of "${word}"`);
+              break;
+            }
+          }
+        }
+        this.cmdBuffer = ''; this.clampCursor(); this.update(); return;
+      } else if (key === 'r') {
+        const word = this.wordUnderCursor();
+        if (word && word.trim() !== '') {
+          this.setStatus(`gr: LSP References for "${word}" (simulated)`);
+        }
+        this.cmdBuffer = ''; this.update(); return;
+      } else if (['U', 'u', '~'].includes(key)) {
+        this.cmdBuffer = 'g' + key;
+        return;
       }
       this.cmdBuffer = ''; // clear if no match
     }
 
-    if (this.cmdBuffer === 'd') {
-      this.handleDeleteMotion(key, count);
+    // Operator motions or text objects
+    if (isOperator(this.cmdBuffer)) {
+      const op = this.cmdBuffer;
+      if (key === op) {
+        const pc = this.pendingCount || 1;
+        const startRow = this.cursor.row;
+        const endRow = Math.min(this.lines.length - 1, startRow + pc - 1);
+        this.executeOperator(op, {
+          startRow,
+          startCol: 0,
+          endRow,
+          endCol: (this.lines[endRow] || '').length - 1,
+          linewise: true
+        });
+        this.cmdBuffer = '';
+        this.pendingCount = 0;
+        return;
+      }
+      if (key === 'i' || key === 'a') {
+        this.cmdBuffer = op + key;
+        return;
+      }
+      if (key === 'g') {
+        this.cmdBuffer = op + 'g';
+        return;
+      }
+      // Treat key as a motion
+      const motionRange = this.getMotionRange(key, this.pendingCount || 1);
+      if (motionRange) {
+        this.executeOperator(op, motionRange);
+      }
+      this.cmdBuffer = '';
+      this.pendingCount = 0;
       return;
     }
-    if (this.cmdBuffer === 'c') {
-      this.handleChangeMotion(key, count);
+
+    // Operator gg motions (dgg, cgg, ygg)
+    if (this.cmdBuffer.length === 2 && this.cmdBuffer[1] === 'g') {
+      const op = this.cmdBuffer[0];
+      if (key === 'g') {
+        this.executeOperator(op, {
+          startRow: 0,
+          startCol: 0,
+          endRow: this.cursor.row,
+          endCol: this.currentLine().length - 1,
+          linewise: true
+        });
+      }
+      this.cmdBuffer = '';
+      this.pendingCount = 0;
       return;
     }
-    if (this.cmdBuffer === 'y') {
-      this.handleYankMotion(key, count);
+
+    // Text objects execution (diw, daw, etc.)
+    if (this.cmdBuffer.length === 2 && ['i', 'a'].includes(this.cmdBuffer[1])) {
+      const op = this.cmdBuffer[0];
+      const isAround = this.cmdBuffer[1] === 'a';
+      const range = this.getTextObjectRange(key, isAround);
+      if (range) {
+        this.executeOperator(op, range);
+        this.stats.textObjUsed = true;
+      }
+      this.cmdBuffer = '';
+      this.pendingCount = 0;
       return;
     }
+
+    // Case change motions/text objects (gU, gu, g~)
+    if (isCaseChange(this.cmdBuffer)) {
+      const op = this.cmdBuffer;
+      if (key === 'i' || key === 'a') {
+        this.cmdBuffer = op + key;
+        return;
+      }
+      const motionRange = this.getMotionRange(key, this.pendingCount || 1);
+      if (motionRange) {
+        this.executeOperator(op, motionRange);
+      }
+      this.cmdBuffer = '';
+      this.pendingCount = 0;
+      return;
+    }
+
+    // Case change text objects (gUiw, guiw, g~iw)
+    if (this.cmdBuffer.length === 3 && ['i', 'a'].includes(this.cmdBuffer[2])) {
+      const op = this.cmdBuffer.slice(0, 2);
+      const isAround = this.cmdBuffer[2] === 'a';
+      const range = this.getTextObjectRange(key, isAround);
+      if (range) {
+        this.executeOperator(op, range);
+        this.stats.textObjUsed = true;
+      }
+      this.cmdBuffer = '';
+      this.pendingCount = 0;
+      return;
+    }
+
     if (this.cmdBuffer === 'f') {
       const col = this.findChar(key, true, false);
       if (col !== null) { this.cursor.col = col; this.lastFindChar = key; this.lastFindForward = true; this.lastFindTill = false; }
@@ -1101,18 +1591,15 @@ class VimEngine {
     }
     if (this.cmdBuffer === 'q') {
       if (key === 'q') {
-        // Stop recording
         if (this.macroRecording) {
           const reg = this.macroRecording;
           this.macroBuffer[reg] = this.macroBuffer[reg] || [];
-          // Remove last 'qq' from recording (the stop command)
           this.macroBuffer[reg].pop();
           this.macroRecording = null;
           this.setStatus(`Macro ${reg} recorded`);
         }
         this.cmdBuffer = ''; return;
       }
-      // Start recording into register
       this.macroRecording = key;
       this.macroBuffer[key] = [];
       this.setStatus(`Recording @${key}`);
@@ -1124,15 +1611,12 @@ class VimEngine {
       this.cmdBuffer = ''; return;
     }
     if (this.cmdBuffer === '"') {
-      // Register prefix — next command will use this register
       this.activeRegister = key;
       this.cmdBuffer = ''; return;
     }
     if (this.cmdBuffer === 'z') {
-      if (key === 'z') {
-        // center — no op in browser
-      } else if (key === 'a') {
-        // toggle fold — no op
+      if (['c', 'o', 'a', 'M', 'R', 'z', 't', 'b', 'f'].includes(key)) {
+        this.stats.foldUsed = true;
       }
       this.cmdBuffer = ''; return;
     }
@@ -1265,10 +1749,17 @@ class VimEngine {
       case 'p': this.paste(false); break;
       case 'P': this.paste(true); break;
       case 'u': this.undo(); break;
+      case 'U': this.undo(); break;
       case 'n': this.repeatSearch(true); break;
       case 'N': this.repeatSearch(false); break;
       case '*': this.searchWordUnderCursor(true); break;
       case '#': this.searchWordUnderCursor(false); break;
+      case 'K':
+        const wordK = this.wordUnderCursor();
+        if (wordK && wordK.trim() !== '') {
+          this.setStatus(`LSP Hover: Documentation for "${wordK}" (simulated)`);
+        }
+        break;
       case 'v':
         this.setMode('visual');
         this.visualStart = { ...this.cursor };
@@ -1340,7 +1831,7 @@ class VimEngine {
         break;
       default:
         // Multi-key starters
-        if (['d', 'c', 'y', 'g', 'f', 'F', 't', 'T', 'm', '`', "'", 'r', 'z', '>', '<', '@', '"'].includes(key)) {
+        if (['d', 'c', 'y', 'g', 'f', 'F', 't', 'T', 'm', '`', "'", 'r', 'z', '>', '<', '@', '"', '[', ']'].includes(key)) {
           this.cmdBuffer = key;
         } else if (key === 'q') {
           if (this.macroRecording) {
@@ -1352,8 +1843,21 @@ class VimEngine {
             this.cmdBuffer = 'q';
           }
         } else {
-          // Movement
-          this.handleNormalMovement(key);
+          // Movement — apply count prefix (e.g. 5j moves 5 lines down, 10l moves 10 chars right)
+          for (let i = 0; i < count; i++) {
+            this.handleNormalMovement(key);
+            // Stop early if we hit a boundary (avoids redundant loops)
+            if (key === 'j' || key === 'ArrowDown') {
+              if (this.cursor.row >= this.lines.length - 1) break;
+            } else if (key === 'k' || key === 'ArrowUp') {
+              if (this.cursor.row <= 0) break;
+            } else if (key === 'l' || key === 'ArrowRight') {
+              const ln = this.lines[this.cursor.row] || '';
+              if (this.cursor.col >= ln.length - 1) break;
+            } else if (key === 'h' || key === 'ArrowLeft') {
+              if (this.cursor.col <= 0) break;
+            }
+          }
           this.clampCursor();
           this.update();
         }
@@ -1437,12 +1941,13 @@ class VimEngine {
   }
 
   playMacro(reg, count = 1) {
-    const keys = this.macroBuffer[reg];
+    const targetReg = reg === '@' ? this.lastMacro : reg;
+    const keys = this.macroBuffer[targetReg];
     if (!keys || keys.length === 0) {
-      this.setStatus(`No macro in register ${reg}`);
+      this.setStatus(`No macro in register ${targetReg || ''}`);
       return;
     }
-    this.lastMacro = reg;
+    this.lastMacro = targetReg;
     for (let i = 0; i < count; i++) {
       for (const k of keys) {
         this.handleKey(k, null);

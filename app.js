@@ -125,21 +125,60 @@ function updateProgressRing() {
   if (text) text.textContent = `${pct}%`;
 }
 
+// ── Ordered lesson list (follows sidebar visual order: grouped by category) ──
+function getOrderedLessons() {
+  const groups = {};
+  const groupOrder = [];
+  LESSONS.forEach(l => {
+    if (!groups[l.category]) {
+      groups[l.category] = [];
+      groupOrder.push(l.category);
+    }
+    groups[l.category].push(l);
+  });
+  const ordered = [];
+  groupOrder.forEach(cat => ordered.push(...groups[cat]));
+  return ordered;
+}
+
 // ── OPEN LESSON ──
 function openLesson(lessonId) {
-  const idx = LESSONS.findIndex(l => l.id === lessonId);
+  const orderedLessons = getOrderedLessons();
+  const idx = orderedLessons.findIndex(l => l.id === lessonId);
   if (idx === -1) return;
-  currentLesson = LESSONS[idx];
+  currentLesson = orderedLessons[idx];
   currentLessonIdx = idx;
+
+  // Bug fix #1: Always reset challengeCompleted when opening any lesson
+  // so completed detection fires fresh, and the completed state is
+  // re-checked from progress (already-completed lessons show feedback).
+  challengeCompleted = false;
 
   document.getElementById('lesson-welcome').style.display = 'none';
   document.getElementById('lesson-detail').style.display = 'block';
   document.getElementById('lesson-detail').classList.add('fade-in');
 
-  // Update sidebar active
+
+
+  // Update sidebar active — scroll the item into view within the sidebar only
   document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
   const item = document.getElementById(`lesson-item-${lessonId}`);
-  if (item) { item.classList.add('active'); item.scrollIntoView({ block: 'nearest' }); }
+  if (item) {
+    item.classList.add('active');
+    // Scroll only within the sidebar list, never the whole page
+    const lessonList = document.getElementById('lesson-list');
+    if (lessonList) {
+      const itemTop = item.offsetTop - lessonList.offsetTop;
+      const itemBottom = itemTop + item.offsetHeight;
+      const listVisible = lessonList.clientHeight;
+      const listScroll = lessonList.scrollTop;
+      if (itemTop < listScroll) {
+        lessonList.scrollTop = itemTop - 8;
+      } else if (itemBottom > listScroll + listVisible) {
+        lessonList.scrollTop = itemBottom - listVisible + 8;
+      }
+    }
+  }
 
   // Render lesson content
   const lesson = currentLesson;
@@ -174,18 +213,32 @@ function openLesson(lessonId) {
   document.getElementById('vim-filename').textContent = challenge.file;
   document.getElementById('vim-status-file').textContent = challenge.file;
 
-  // Hide feedback/hint
+  // Hide feedback/hint first
   document.getElementById('feedback-panel').style.display = 'none';
   document.getElementById('hint-panel').style.display = 'none';
 
-  // Init vim
+  // Init vim engine (must happen before any challenge check)
   initVim(challenge.initialText);
 
+  // If this lesson is already completed, show the completed state
+  if (progress.completedLessons.includes(lesson.id)) {
+    challengeCompleted = true;
+    showSuccessFeedback();
+  }
+
   // Update nav buttons
+  const orderedLen = orderedLessons.length;
   document.getElementById('prev-lesson-btn').disabled = idx === 0;
-  document.getElementById('next-lesson-btn').textContent = idx === LESSONS.length - 1 ? 'Finish ✓' : 'Next →';
+  document.getElementById('next-lesson-btn').textContent = idx === orderedLen - 1 ? 'Finish ✓' : 'Next →';
 
   renderLessonList();
+
+  // Scroll the lesson content panel back to top AFTER all DOM is rendered
+  // (must be last — earlier placement gets overridden by content injection)
+  requestAnimationFrame(() => {
+    const lessonContent = document.getElementById('lesson-content');
+    if (lessonContent) lessonContent.scrollTop = 0;
+  });
 }
 
 // ── VIM EDITOR ──
@@ -456,7 +509,7 @@ function showSuccessFeedback() {
   icon.textContent = '🎉';
   title.textContent = 'Challenge Complete!';
   msg.textContent = `You earned ${currentLesson.xp} XP! Great work mastering "${currentLesson.title}".`;
-  btn.textContent = currentLessonIdx < LESSONS.length - 1 ? 'Next Lesson →' : 'View Progress 🏆';
+  btn.textContent = currentLessonIdx < getOrderedLessons().length - 1 ? 'Next Lesson →' : 'View Progress 🏆';
 
   // Update progress
   if (!progress.completedLessons.includes(currentLesson.id)) {
@@ -470,18 +523,18 @@ function showSuccessFeedback() {
 }
 
 function nextLesson() {
-  challengeCompleted = false;
-  if (currentLessonIdx < LESSONS.length - 1) {
-    openLesson(LESSONS[currentLessonIdx + 1].id);
+  const orderedLessons = getOrderedLessons();
+  if (currentLessonIdx < orderedLessons.length - 1) {
+    openLesson(orderedLessons[currentLessonIdx + 1].id);
   } else {
     showProgress();
   }
 }
 
 function goPrevLesson() {
-  challengeCompleted = false;
+  const orderedLessons = getOrderedLessons();
   if (currentLessonIdx > 0) {
-    openLesson(LESSONS[currentLessonIdx - 1].id);
+    openLesson(orderedLessons[currentLessonIdx - 1].id);
   }
 }
 
