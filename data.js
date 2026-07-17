@@ -1025,6 +1025,137 @@ const LESSONS = [
       validate: (state) => state.text.includes('vim.opt.wrap'),
     },
   },
+  {
+    id: 'autocomplete',
+    title: 'Built-in Autocomplete',
+    level: 'intermediate',
+    category: 'Insert Like a Pro',
+    keys: ['Ctrl+n', 'Ctrl+p'],
+    xp: 80,
+    desc: 'Use Vim\'s built-in completion system to complete words based on document context.',
+    commands: [
+      { key: 'Ctrl+n', desc: 'Complete next match' },
+      { key: 'Ctrl+p', desc: 'Complete previous match' },
+    ],
+    explanations: [
+      {
+        title: '⚡ Native Completion',
+        body: 'Vim scans your active buffers for matching words. Pressing <code class="inline">Ctrl+n</code> completes the word using matches found forward, and <code class="inline">Ctrl+p</code> cycles backward. It\'s fast, simple, and requires no plugins!',
+      },
+    ],
+    challenge: {
+      file: 'complete.txt',
+      initialText: 'VimNinja is an amazing platform for learning Vim.\nStart typing VimN and autocomplete it here: ',
+      instruction: 'Go to the end of line 2, enter insert mode, type <kbd>VimN</kbd>, then press <kbd>Ctrl+n</kbd> to autocomplete it.',
+      hint: 'Move cursor to the end of line 2, type "VimN" in insert mode, and press Ctrl+n.',
+      validate: (state) => (state.text.match(/VimNinja/g) || []).length >= 2,
+    },
+  },
+  {
+    id: 'netrw-explorer',
+    title: 'Built-in Explorer (netrw)',
+    level: 'intermediate',
+    category: 'Navigation',
+    keys: [':Lexplore', ':Ex'],
+    xp: 80,
+    desc: 'Explore and open files in your directory using Vim\'s built-in explorer panel netrw.',
+    commands: [
+      { key: ':Ex', desc: 'Open explorer in current window' },
+      { key: ':Lexplore', desc: 'Toggle sidebar explorer panel' },
+    ],
+    explanations: [
+      {
+        title: '📂 File Exploring without Plugins',
+        body: 'Vim comes with <code class="inline">netrw</code> built-in. Type <code class="inline">:Ex</code> to turn the current buffer into an explorer, or <code class="inline">:Lexplore</code> to open a persistent sidebar listing directories. Hit <code class="inline">Enter</code> on a file to open it.',
+      },
+    ],
+    challenge: {
+      file: 'project.txt',
+      initialText: 'Vim project layout:\n- index.html\n- app.js\n- style.css',
+      instruction: 'Type <kbd>:Lexplore</kbd> and press Enter to toggle the file explorer panel.',
+      hint: 'Type :Lexplore and press Enter.',
+      validate: (state) => state.netrwUsed === true,
+    },
+  },
+  {
+    id: 'shell-filters',
+    title: 'Shell Filters',
+    level: 'advanced',
+    category: 'Advanced Vim',
+    keys: ['!'],
+    xp: 100,
+    desc: 'Pipe text directly from Vim buffers into system tools to sort, format, or process data.',
+    commands: [
+      { key: '!ip sort', desc: 'Pipe paragraph into system sort command' },
+      { key: ':r !cmd', desc: 'Insert shell command output below cursor' },
+    ],
+    explanations: [
+      {
+        title: '🔌 The Unix Philosophy',
+        body: 'Vim integrates seamlessly with standard command-line tools. Running <code class="inline">!{motion} sort</code> takes the lines selected by the motion and replaces them with sorted lines from the external command. `:r !date` reads command output into the file.',
+      },
+    ],
+    challenge: {
+      file: 'words.txt',
+      initialText: 'zebra\napple\nmonkey\ngrape\nbanana',
+      instruction: 'We want to sort this paragraph. Press <kbd>!ip</kbd> to start the filter, then type <kbd>sort</kbd> and press <kbd>Enter</kbd>.',
+      hint: 'Move to the first line, press !ip, type sort, and press Enter.',
+      validate: (state) => state.shellFilterUsed === true && state.text.includes('apple\nbanana\ngrape\nmonkey\nzebra'),
+    },
+  },
+  {
+    id: 'history-window',
+    title: 'Command History Window',
+    level: 'advanced',
+    category: 'Advanced Vim',
+    keys: ['q:', 'q/'],
+    xp: 90,
+    desc: 'Open the history editor window to edit and rerun past commands or search queries.',
+    commands: [
+      { key: 'q:', desc: 'Open Ex command history window' },
+      { key: 'q/', desc: 'Open search history window' },
+    ],
+    explanations: [
+      {
+        title: '📜 The Command history editor',
+        body: 'Vim maintains history of your command line. Pressing <code class="inline">q:</code> opens this history as a real buffer. You can navigate it, edit a previous complex command with normal Vim keys, and press <code class="inline">Enter</code> to run it.',
+      },
+    ],
+    challenge: {
+      file: 'history.txt',
+      initialText: 'Edit past command history:\nq: opens commands window\nq/ opens searches window',
+      instruction: 'Press <kbd>q:</kbd> to open the command-line history window.',
+      hint: 'Press q then : in Normal mode.',
+      validate: (state) => state.cmdHistoryUsed === true,
+    },
+  },
+  {
+    id: 'spellchecking',
+    title: 'Built-in Spell Checking',
+    level: 'intermediate',
+    category: 'Editing',
+    keys: [':set spell', 'z=', ']s'],
+    xp: 80,
+    desc: 'Activate spell check and correct misspelled words using suggestions.',
+    commands: [
+      { key: ':set spell', desc: 'Enable native spell checking' },
+      { key: ']s', desc: 'Jump to next misspelled word' },
+      { key: 'z=', desc: 'Display spelling suggestions' },
+    ],
+    explanations: [
+      {
+        title: '📝 Native Spellchecking',
+        body: 'Vim has native dictionary lookup. Enable with <code class="inline">:set spell</code>. Navigate errors with <code class="inline">]s</code>. Place cursor on misspelled word and press <code class="inline">z=</code> to show suggestions and select a correction.',
+      },
+    ],
+    challenge: {
+      file: 'doc.txt',
+      initialText: 'This is a document containing a speling mistake.',
+      instruction: 'Place cursor on "speling" and press <kbd>z=</kbd> to view spelling corrections list.',
+      hint: 'Move cursor onto the word "speling" and press z=.',
+      validate: (state) => state.spellCheckUsed === true,
+    },
+  },
 ];
 
 // ============================================================

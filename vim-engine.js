@@ -44,6 +44,10 @@ class VimEngine {
       windowSplitUsed: false,
       bufferNavUsed: false,
       foldUsed: false,
+      netrwUsed: false,
+      shellFilterUsed: false,
+      cmdHistoryUsed: false,
+      spellCheckUsed: false,
     };
     // Macro recording
     this.macroRecording = null;
@@ -74,6 +78,7 @@ class VimEngine {
       lineNavUsed: false, usedGG: false, jumpUsed: false,
       textObjUsed: false, operatorUsed: false, indentUsed: false,
       windowSplitUsed: false, bufferNavUsed: false, foldUsed: false,
+      netrwUsed: false, shellFilterUsed: false, cmdHistoryUsed: false, spellCheckUsed: false,
     };
     this.register = {};
     this.marks = {};
@@ -163,6 +168,7 @@ class VimEngine {
     }
     if (mode === 'normal') {
       this.clampCursor();
+      this.autoCompleteState = null;
       // after insert, cursor moves back one if not at start
       const line = this.currentLine();
       if (this.cursor.col > 0 && this.cursor.col >= line.length) {
@@ -744,6 +750,13 @@ class VimEngine {
         this.lines[r] = before + mid + after;
       }
       this.stats.operatorUsed = true;
+    } else if (op === '!') {
+      this.filterRange = range;
+      this.setMode('command');
+      this.cmdLineInput = '!';
+      this.onStatusMsg('!');
+      this.update();
+      return;
     }
 
     this.clampCursor();
@@ -801,6 +814,23 @@ class VimEngine {
   // ── Execute command line ──
   executeCommand(cmd) {
     cmd = cmd.trim();
+    if (cmd.startsWith('!')) {
+      if (this.filterRange) {
+        const { startRow, endRow } = this.filterRange;
+        const subLines = this.lines.slice(startRow, endRow + 1);
+        if (cmd.includes('sort')) {
+          subLines.sort();
+        }
+        this.lines.splice(startRow, subLines.length, ...subLines);
+        this.filterRange = null;
+        this.stats.shellFilterUsed = true;
+        this.setStatus(`Filtered lines through "${cmd}"`);
+      } else {
+        this.setStatus(`Executed shell command: ${cmd} (simulated)`);
+      }
+      this.update();
+      return;
+    }
     if (cmd === 'q' || cmd === 'q!') {
       this.setStatus('(Browser Vim) Cannot quit — you\'re in the browser!');
     } else if (cmd === 'w' || cmd === 'wq' || cmd === 'x') {
@@ -856,6 +886,23 @@ class VimEngine {
       this.setStatus('Vim Help documentation (simulated)');
     } else if (cmd.startsWith('set ')) {
       this.setStatus(`(${cmd} applied — simulated)`);
+      if (cmd.includes('spell')) {
+        this.stats.spellCheckUsed = true;
+      }
+    } else if (cmd === 'Ex' || cmd === 'Lexplore' || cmd.startsWith('Ex ') || cmd.startsWith('Lexplore ')) {
+      this.setStatus('netrw: Directory listing (simulated)');
+      this.stats.netrwUsed = true;
+    } else if (cmd.startsWith('r ')) {
+      const rest = cmd.slice(2).trim();
+      if (rest.startsWith('!')) {
+        this.saveUndo();
+        this.lines.splice(this.cursor.row + 1, 0, `[Output of command: ${rest.slice(1)}]`);
+        this.stats.shellFilterUsed = true;
+      } else {
+        this.lines.splice(this.cursor.row + 1, 0, `[Contents of file: ${rest}]`);
+      }
+      this.setStatus('Read file contents (simulated)');
+      this.update();
     } else if (cmd === 'ls' || cmd === 'files' || cmd === 'buffers') {
       this.setStatus('1 %a "[current file]" line 1');
       this.stats.bufferNavUsed = true;
@@ -908,6 +955,38 @@ class VimEngine {
   }
 
   handleInsert(key) {
+    if (key === 'Ctrl+n' || key === 'Ctrl+p') {
+      const line = this.lines[this.cursor.row] || '';
+      const beforeCursor = line.slice(0, this.cursor.col);
+      const match = beforeCursor.match(/(\w+)$/);
+      if (match) {
+        const prefix = match[1];
+        const allWords = this.getText().match(/\b\w+/g) || [];
+        const candidates = [...new Set(allWords.filter(w => w.startsWith(prefix) && w !== prefix))];
+        if (candidates.length > 0) {
+          if (!this.autoCompleteState || this.autoCompleteState.prefix !== prefix) {
+            this.autoCompleteState = {
+              prefix,
+              candidates,
+              index: key === 'Ctrl+n' ? 0 : candidates.length - 1,
+              originalWord: prefix,
+              row: this.cursor.row,
+              colStart: this.cursor.col - prefix.length
+            };
+          } else {
+            const dir = key === 'Ctrl+n' ? 1 : -1;
+            this.autoCompleteState.index = (this.autoCompleteState.index + dir + candidates.length) % candidates.length;
+          }
+          const word = candidates[this.autoCompleteState.index];
+          const start = this.autoCompleteState.colStart;
+          this.lines[this.cursor.row] = line.slice(0, start) + word + line.slice(this.cursor.col);
+          this.cursor.col = start + word.length;
+          this.update();
+        }
+      }
+      return;
+    }
+
     if (key === 'Backspace') {
       if (this.cursor.col > 0) {
         const line = this.lines[this.cursor.row];
@@ -1328,7 +1407,7 @@ class VimEngine {
     this.countBuffer = '';
 
     // Multi-key commands accumulation and execution
-    const isOperator = (op) => ['d', 'c', 'y', '>', '<', '='].includes(op);
+    const isOperator = (op) => ['d', 'c', 'y', '>', '<', '=', '!'].includes(op);
     const isCaseChange = (op) => ['gU', 'gu', 'g~'].includes(op);
 
     if (this.cmdBuffer === 'Ctrl+w') {
@@ -1600,6 +1679,11 @@ class VimEngine {
         }
         this.cmdBuffer = ''; return;
       }
+      if (key === ':' || key === '/') {
+        this.setStatus(`Command/Search History Window (simulated)`);
+        this.stats.cmdHistoryUsed = true;
+        this.cmdBuffer = ''; return;
+      }
       this.macroRecording = key;
       this.macroBuffer[key] = [];
       this.setStatus(`Recording @${key}`);
@@ -1617,6 +1701,10 @@ class VimEngine {
     if (this.cmdBuffer === 'z') {
       if (['c', 'o', 'a', 'M', 'R', 'z', 't', 'b', 'f'].includes(key)) {
         this.stats.foldUsed = true;
+      }
+      if (key === '=') {
+        this.setStatus('Spell Suggestions: 1. spelling  2. spelling error (simulated)');
+        this.stats.spellCheckUsed = true;
       }
       this.cmdBuffer = ''; return;
     }
